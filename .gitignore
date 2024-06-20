@@ -2,3 +2,6 @@
 /data*
 *vivado.log
 /vivado*
+data/
+vivado/
+MNISTmodels/

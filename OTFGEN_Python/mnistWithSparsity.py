@@ -1,0 +1,435 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
+from torchvision.datasets import MNIST
+
+# Note: this example requires the torchmetrics library: https://torchmetrics.readthedocs.io
+import torchmetrics
+from tqdm import tqdm
+
+import torchhd
+from torchhd.models import Centroid
+from torchhd import embeddings
+
+import sympy as sp
+from sympy import Eq, Symbol, solve, N
+import math
+
+import numpy as np
+import tensorflow as tf
+import random
+import sys
+import os
+np.set_printoptions(threshold=sys.maxsize)
+torch.set_printoptions(threshold=sys.maxsize)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using {} device".format(device))
+
+DIMENSIONS = 1000
+IMG_SIZE = 28
+NUM_LEVELS = 1000
+c = 1
+print_flag = 0 
+countTimer = 100
+BATCH_SIZE = 1  # for GPUs with enough memory we can process multiple images at ones
+a = []
+b = []
+transform = torchvision.transforms.ToTensor()
+
+train_ds = MNIST("./data", train=True, transform=transform, download=True)
+train_ld = torch.utils.data.DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
+
+test_ds = MNIST("./data", train=False, transform=transform, download=True)
+test_ld = torch.utils.data.DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
+
+
+os.system('mkdir mem')
+os.system('mkdir mem/Xili_HDCMem')
+os.system('mkdir mem/sparseFiles')
+def memMinimizer (d, f):
+    n = 2
+    k = []
+    zeros = []
+    memSize = []
+    popCountSize = []
+    memOverhead = []
+    while 2**n < f:
+        k.append(math.ceil(d/(2**n)))
+        zeros.append((k[-1]*(2**n))-d)
+        memSize.append(n)
+        popCountSize.append((k[-1]*n))
+        memOverhead.append(zeros[-1]+popCountSize[-1])
+        n = n + 1
+    return memSize[memOverhead.index(min(memOverhead))], k[memOverhead.index(min(memOverhead))]
+
+
+def class_sparsity (a):     # a is model.weight
+    #class1 = torch.load( 'mnist_LFSREncoder_quantize_True_ret_1000.pt' , map_location=torch.device('cpu'))
+    count = 0
+    ls = []
+    for j in range(len(a[1])):
+        m = a[0][j]
+        n = 0
+        for i in range(len(a)):
+            if m != a[i][j]:
+                n = 1
+        if n == 0:
+            count = count + 1
+            ls.append(j)
+    print("Number of pruning: ",count)
+    return(ls)
+
+def sparseconfig (DIMENSIONS, sparse, featureSize, NUM_LEVELS, classes):
+    pixbit = math.ceil(math.log2(NUM_LEVELS))
+    d = DIMENSIONS
+    lgf  = math.ceil(math.log2(featureSize))
+    c   = classes
+    f = featureSize
+    n , adI = memMinimizer (DIMENSIONS - sparse, featureSize)
+    adz = 2**(math.ceil(math.log2(adI)))-adI
+    zComp =  2**(math.ceil(math.log2(classes)))-classes
+    lgCn =  math.ceil(math.log2(classes))
+    logn = math.ceil(math.log2(adI))
+    x = math.ceil(DIMENSIONS/NUM_LEVELS)
+    if DIMENSIONS < x*NUM_LEVELS:
+        x = x-1
+    return (pixbit, d, sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x)
+
+  
+def config (DIMENSIONS, featureSize, NUM_LEVELS, classes):
+    pixbit = math.ceil(math.log2(NUM_LEVELS))
+    d = DIMENSIONS
+    lgf  = math.ceil(math.log2(featureSize))
+    c   = classes
+    f = featureSize
+    n , adI = memMinimizer (DIMENSIONS, featureSize)
+    adz = 2**(math.ceil(math.log2(adI)))-adI
+    zComp =  2**(math.ceil(math.log2(classes)))-classes
+    lgCn =  math.ceil(math.log2(classes))
+    logn = math.ceil(math.log2(adI))
+    x = math.ceil(DIMENSIONS/NUM_LEVELS)
+    if DIMENSIONS < x*NUM_LEVELS:
+        x = x-1
+    return (pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x)
+
+def binarizing (n,b):
+    s = str(bin(n))
+    #print("---" , s , len(s) )
+    s = s [2:]
+    #print("---" , s )
+    while len(s) < b:
+        s = '0'+ s
+    return s
+
+def inputGen(train_X, mystr, countTimer, NUM_LEVELS, pixbit):
+    x = list(binarizing (int(item*NUM_LEVELS),pixbit) for row in train_X for item in row)
+    for i in range(len(x)-1):
+        if (x[i+1] != x[i]):
+            mystr = mystr +' "'+ x[i+1]  +'"'+" after "+ str(countTimer) +" ns,"
+        countTimer = countTimer + 1
+    return mystr, countTimer
+
+def genConfig (XORs, init_num, DIMENSIONS):
+    strXors = ""
+    strinit = ""
+    for i in range(DIMENSIONS):
+        if i in XORs :
+              strXors = strXors + '1'
+        else:
+              strXors = strXors + '0'
+    init = [eval(i) for i in [*bin(init_num)[2:]]]
+    for i in (init):
+        strinit = strinit + str(i)
+    for i in range (DIMENSIONS - len(init)):
+        strinit =  strinit +'0'
+    with open('mem/lfsrConfig.txt', 'w') as output:
+        output.write("XORs\n")
+        output.write(str(strXors[::-1]))
+        output.write("\n")
+        output.write("init\n")
+        output.write(strinit[::-1])
+
+def write_memory(XORs, init_num, posision, NUM_LEVELS,d):
+    strXors = ""
+    for i in range(DIMENSIONS):
+        if i in XORs :
+              strXors = strXors + '1'
+        else:
+              strXors = strXors + '0'
+    with open('mem/congigSigniture.mif', 'w') as output:
+        output.write(str(strXors[::-1]))
+    weight_mem = []
+    for ini in posision:
+        strinit2 = ""
+        for i in range(len(ini)):
+            if ini[i] == -1 :
+                strinit2 = strinit2 + '0'
+            else :
+                strinit2 = strinit2 + '1'
+        weight_mem.append(strinit2)
+    #strinit = weight_mem[0]
+    with open('mem/congigInitialvalues.mif', 'w') as output:
+        output.write(str(weight_mem[0]))
+    with open('mem/BV_img.coe', 'w') as output:
+        output.write("memory_initialization_radix=2;\n")
+        output.write("memory_initialization_vector=\n")
+        for i in weight_mem:
+            output.write(i)
+            output.write(",\n")
+        #output.write(";")
+    with open('mem/BV_img.mif', 'w') as output:
+        for i in weight_mem:
+            #output.write('"')
+            output.write(i)
+            #output.write('"')
+            output.write(",\n")
+
+    id_mem = []
+    poniter =  math.ceil(math.log2(NUM_LEVELS))
+    for i in range(2**poniter):
+        mystr = ""
+        if i == 0 :
+            mystr = "0"*d
+        elif i == 2**poniter-1 :
+            mystr = "1"*d
+        else :
+            mystr = "0"*(d-(i*c))+"1"*(i*c)
+        id_mem.append(mystr)
+    #for i in id_mem:
+        #print (i)
+    with open('mem/ID_img.coe', 'w') as output:
+        output.write("memory_initialization_radix=2;\n")
+        output.write("memory_initialization_vector=\n")
+        for i in id_mem:
+            output.write(i)
+            output.write("\n")
+        #output.write(";")
+    with open('mem/ID_img.mif', 'w') as output:
+        for i in id_mem:
+            #output.write('"')
+            output.write(i)
+            #output.write('"')
+            output.write("\n")
+
+def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
+    for k in range(len(a)):
+        for m in range (number_of_confComp):
+            mystr =""
+            if k == 1:
+                flag = 1
+            else:
+                flag = 0
+            if m != number_of_confComp-1:
+                for s in range(mem_size):
+                    #print((s+((m)*mem_size)))
+                    #print(s," -  ", m, " -  ", mem_size, " -  ", (s+((m)*mem_size)))
+                    if a[k][(s+((m)*mem_size))] > 0:
+                        mystr = '1' + mystr
+                    else:
+                        mystr = '0' + mystr
+            else:
+                for s in range(mem_size-zeropadding):
+                    #print((s+((m)*mem_size)))
+                    if a[k][(s+((m)*mem_size))] > 0:
+                        mystr = '1' + mystr
+                    else:
+                        mystr = '0' + mystr
+                zeros = '0'*zeropadding
+                mystr = zeros + mystr
+            # number_of_confComp-m OR m
+            with open('mem/Xili_HDCMem/full{}_{}.coe'.format(k, m), 'w') as output:
+                output.write("memory_initialization_radix=2;\n")
+                output.write("memory_initialization_vector=\n")
+                output.write(mystr)
+            with open('mem/Xili_HDCMem/full{}_{}.mif'.format(k, m), 'w') as output:
+                output.write(mystr)
+    #for i in a:
+    #    for j in a:
+    #        print(str(i ^ j).count('1'), end=",	")
+    #    print("\n")
+def Sparsemodule(ls):
+    os.system('mkdir MNISTmodels/sparseFiles')
+    os.system('touch MNISTmodels/sparseFiles/connector.vhd')
+    f = open('MNISTmodels/connector.vhd', "w")
+    f.write("LIBRARY IEEE; \nUSE IEEE.STD_LOGIC_1164.ALL; \nUSE IEEE.NUMERIC_STD.ALL; \n  \nENTITY connector IS \n\tPORT ( \n\t\tinput         : IN  STD_LOGIC_VECTOR ("+ str(d - 1)+" DOWNTO 0); \n\t\tpruneoutput        : OUT  STD_LOGIC_VECTOR ("+ str(len(ls)- 1)+" DOWNTO 0)      \n\t);\nEND ENTITY connector;\n\nARCHITECTURE behavioral OF connector  IS\nBEGIN\n")
+    counter = 0 
+    for i in range(1000):
+        if i in ls:
+            f.write("pruneoutput("+str(counter)+") <= input("+str(i)+");\n")
+            counter = counter + 1
+    f.write('\nEND ARCHITECTURE behavioral;')
+    f.close()
+
+def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
+    for k in range(len(a)):
+        for m in range (number_of_confComp):
+            mystr =""
+            if k == 1:
+                flag = 1
+            else:
+                flag = 0
+            if m != number_of_confComp-1:
+                for s in range(mem_size):
+                    if (s+((m)*mem_size)) in ls:
+                        pass
+                        #print(s+((m)*mem_size), end = ", ")
+                    #print((s+((m)*mem_size)))
+                    #print(s," -  ", m, " -  ", mem_size, " -  ", (s+((m)*mem_size)))
+                    else:
+                        if a[k][(s+((m)*mem_size))] > 0:
+                            mystr = '1' + mystr
+                        else:
+                            mystr = '0' + mystr
+            else:
+                for s in range(mem_size-zeropadding):
+                    if (s+((m)*mem_size)) in ls:
+                        pass
+                        #print(s+((m)*mem_size), end = ", ")
+                    else:
+                        if a[k][(s+((m)*mem_size))] > 0:
+                            mystr = '1' + mystr
+                        else:
+                            mystr = '0' + mystr
+                zeros = '0'*zeropadding
+                mystr = zeros + mystr
+            with open('./mem/sparseFiles/sparse{}_{}.coe'.format(k, m), 'w') as output:
+                output.write("memory_initialization_radix=2;\n")
+                output.write("memory_initialization_vector=\n")
+                output.write(mystr)
+            with open('./mem/sparseFiles/sparse{}_{}.mif'.format(k, m), 'w') as output:
+                output.write(mystr)
+
+class LFSR:
+    def __init__(self, init, XORs):
+        self.register = init
+        self.XORs = XORs
+
+    def shift(self):
+        feedback = self.register[len(self.register)-1]
+        for XOR in self.XORs:
+            self.register[XOR-1] ^= feedback
+        self.register = [feedback]+ self.register[0:len(self.register)-1]
+        return self.register
+
+    def generate_sequence(self, length):
+        sequence = []
+        init = self.register
+        for i in range(length):
+            reg = self.shift()
+            bipolarReg = [-1 if x==0 else x for x in reg]
+            if (init == reg ):
+                #print(i+1)
+                sequence.append(bipolarReg[::-1].copy())
+                return sequence
+            sequence.append(bipolarReg[::-1].copy())
+        return sequence
+
+class Encoder(nn.Module):
+    def __init__(self, out_features, size, levels):
+        super(Encoder, self).__init__()
+        self.flatten = torch.nn.Flatten()
+        self.position = embeddings.Random(size * size, out_features)
+        self.value = embeddings.Level(levels, out_features)
+        #### my levels
+        levels = []
+        for number in range(NUM_LEVELS):
+            my_list = []
+            if number == 0:
+                my_list = [-1]*(DIMENSIONS)
+            elif number == NUM_LEVELS-1:
+                my_list = [1]*(DIMENSIONS)
+            else:
+                #my_list = [-1]*(DIMENSIONS-(number*c)) + [1]*(number*c)
+                mm = [-1]*(NUM_LEVELS-(number)) + [1]*(number)
+                for i in range(c):
+                    my_list = mm + my_list
+            my_list = my_list[::-1]
+            levels.append(my_list[:DIMENSIONS])
+        arr = np.array(levels)
+        np.save("./mem/mnist_levels.npy", arr)
+        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
+        self.value.weight = tArr.float()
+
+        init_num = random.randint(1, 2**out_features)
+        #init_num = 2364758550780384601003264153007706701471278895437173305013772185825924635449624099875636396060697802283311561593303954668638022863717989774785374190500042656145908199891700857509751217372387445013949770374090104169620613600076919814774561663498613595644179272945890734808204917656498559215389762418013
+        XORs_num = random.randint(2**(out_features-1), 2**out_features)
+        #XORs_num = 9256024464651076867106339930309875994852422681356343731046347743132348909293272191189780208546406447374832007401533053720325798048368368420762326198677318654225774204393638313841294218751116638235498645564150054802436824915884037097605763308482699594581621777893792259625182257561408173879870900596696
+        #print(init_num)
+        #print(XORs_num)
+        init = [eval(i) for i in [*bin(init_num)[2:]]]
+        init.extend([0] * (out_features - len(init)))
+        XORs = [i for i, x in enumerate(reversed([*bin(XORs_num)[2:]])) if x == '1']
+        lfsr = LFSR(init, XORs)
+        sequence_length = size * size
+        generated_sequence = lfsr.generate_sequence(sequence_length)
+        arr = np.array(generated_sequence)
+        #np.save("./mem/mnist_bv.npy", arr)
+        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
+        self.position.weight = tArr.float()
+    
+        #genConfig (XORs, init_num, DIMENSIONS)
+        write_memory(XORs, init_num, generated_sequence, NUM_LEVELS,DIMENSIONS)
+
+    def forward(self, x):
+        x = self.flatten(x)
+        sample_hv = torchhd.bind(self.position.weight, self.value(x))
+        sample_hv = torchhd.multiset(sample_hv)
+        positive = torch.tensor(1.0, dtype=sample_hv.dtype, device=sample_hv.device)
+        negative = torch.tensor(-1.0, dtype=sample_hv.dtype, device=sample_hv.device)
+        return torch.where(sample_hv > 0, positive, negative)
+
+encode = Encoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
+encode = encode.to(device)
+
+num_classes = len(train_ds.classes)
+model = Centroid(DIMENSIONS, num_classes)
+model = model.to(device)
+
+
+with torch.no_grad():
+    for samples, labels in tqdm(train_ld, desc="Training"):
+        samples = samples.to(device)
+        labels = labels.to(device)
+
+        samples_hv = encode(samples)
+        model.add(samples_hv, labels)
+
+accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)
+model.normalize(quantize=True)
+with torch.no_grad():
+    print_flag = 1
+    count = 0
+    for samples, labels in tqdm(test_ld, desc="Testing"):
+        count = count + 1
+        if count %850 == 0:
+            print_flag = 1
+        else:
+            print_flag = 0
+        samples = samples.to(device)
+        samples_hv = encode(samples)
+        outputs = model(samples_hv, dot=True)
+        #if print_flag == 1:
+        accuracy.update(outputs.cpu(), labels)
+
+print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
+
+torch.save(model.weight, "MNISTmodels/mnist.pt")
+
+ls = class_sparsity (model.weight)
+print ("sparse model: ", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("Normal model: ", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x  = config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
+Sparsemodule(ls)
+class_normalize_memory (model.weight, 2**n, adI, (2**n)*adI - d)
+
+pixbit, d, sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x = sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
+class_normalize_memory_sparse (model.weight, 2**n, adI, (2**n)*adI - d, ls)
+"""
+print ("Normal model: ", pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa )
+print ("sparse model: ", DIMENSIONS, config (DIMENSIONS-spa, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+
+#print(config (3000, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+class_normalize_memory (model.weight, 2**n, adI, (2**n)*adI - d)
+"""    
