@@ -1,0 +1,4 @@
+*.pt
+/data*
+*vivado.log
+/vivado*
