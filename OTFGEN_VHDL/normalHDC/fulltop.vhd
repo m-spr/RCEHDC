@@ -6,19 +6,20 @@ use STD.textio.all;
 use ieee.std_logic_textio.all;
 
 ENTITY fulltopHDC IS
-    GENERIC
-    (	 pixbit		:INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
+    GENERIC 
+    (	 pixbit		:INTEGER  := 8; -- consider 8 bit is enough for grayscale --- it is not
         d           : INTEGER := 1000; -- dimension size
         lgf         : INTEGER := 10; -- bit width out popCounters --- LOG2(#feature)
-        c           : INTEGER := 9; ---- #Classes
+        c           : INTEGER := 10; ---- #Classes
         featureSize : INTEGER := 784;
         n           : INTEGER := 9; --512 each classMem -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,, for comparitor thinpg! 256 unit in each portin of memory
         adI         : INTEGER := 2; -- number of confComp module, or adderInput and = ceiling(D/(2^n))
         adz         : INTEGER := 0; -- zeropadding for RSA = 2**? - adI
-        zComp       : INTEGER := 7; -- zeropadding Mux Comp = 2**? - c
+        zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
         lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
 		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
-		x           : INTEGER := 1 -- coefficient of IDLEVEL
+		r           : INTEGER := 232;                  -- remainder from division for ID level
+		x           : INTEGER := 3 -- coefficient of IDLEVEL
 	);
     PORT
     (
@@ -52,6 +53,7 @@ component OTFGEn IS
         zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
         lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
 		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
+		r           : INTEGER := 2;                  -- remainder from division for ID level
 		x           : INTEGER := 1 -- coefficient of IDLEVEL
 	);
     PORT
@@ -62,11 +64,21 @@ component OTFGEn IS
         pixel		: IN STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
         --update		: IN STD_LOGIC;		
         done        : OUT STD_LOGIC;
-        --memen       : OUT STD_LOGIC;
+        TLAST_S, TVALID_S, ready_M       : OUT STD_LOGIC;
         --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
         classIndex  : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
     );
 END component;
+
+COMPONENT regOne IS
+	GENERIC (init : STD_LOGIC := '1');   -- initial value
+	PORT (
+		clk 		: IN STD_LOGIC;
+		regUpdate, regrst 	: IN STD_LOGIC;
+		din         : IN  STD_LOGIC;
+		dout        : OUT  STD_LOGIC
+	);
+END COMPONENT;
         
 signal pixelIn		: STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
 signal classIndex  : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
@@ -76,6 +88,8 @@ signal outreg0 : std_logic_vector (31 DOWNTO 0):= (others =>'0');
 signal pixelreg		: STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
   
 
+TYPE state IS  (init,  registering);
+SIGNAL ns,  ps : state;
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of TVALID_M : signal is "TRUE";
 attribute MARK_DEBUG of TDATA_M : signal is "TRUE";
@@ -87,21 +101,21 @@ attribute MARK_DEBUG of TVALID_S : signal is "TRUE";
 attribute MARK_DEBUG of TLAST_S : signal is "TRUE";
 attribute MARK_DEBUG of TDATA_S : signal is "TRUE";
 attribute MARK_DEBUG of classIndex : signal is "TRUE";
+attribute MARK_DEBUG of done : signal is "TRUE";
+attribute MARK_DEBUG of ns : signal is "TRUE";
       
-TYPE state IS  (init,  registering);
-SIGNAL ns,  ps : state;
 BEGIN
 --rstl <= not(rst);
 
     HDCOTFGEn: OTFGEn 
     GENERIC MAP
-    (	 10, 1000, 10, 10, 784, 9, 2, 0, 6, 4, 1, 1
-    --pixbit, d, lgf, c, featureSize, n, adI, adz, zComp, lgCn, logn, x  
+    (	 
+    pixbit, d, lgf, c, featureSize, n, adI, adz, zComp, lgCn, logn, r ,x  
 	)
     PORT MAP
     (
         clk, rst, run, 
-        pixelIn, done,    
+        pixelIn, done,   TLAST_S, TVALID_S, TREADY_M,  
         classIndex 
     );
      
@@ -109,10 +123,10 @@ BEGIN
 	run <= TVALID_M; 
     
     --TREADY_M <= not(TLAST_M);
-    TREADY_M <= '1';
+    ---TREADY_M <= '1';
     
     TDATA_S <= outreg0(31 downto lgCn) & classIndex;
-    TKEEP_S<= "0111";
+    TKEEP_S<= "1111";
     
     PROCESS(clk) BEGIN 
 		IF rising_edge(clk) then
@@ -123,29 +137,44 @@ BEGIN
 			END IF;
 		END IF;
 	END PROCESS;
-	
-	PROCESS ( ps,  done)
-	BEGIN 
-	TLAST_S <= '0';
-    TVALID_S <= '0';
-		CASE (ps) IS 
-			WHEN init =>
-            IF ( done = '1') THEN
-                    ns <= registering;
-            END IF;
-            
-			WHEN registering =>
-                TLAST_S <= '1';
-                TVALID_S <= '1';
-                IF (TREADY_S = '1') THEN  --- perhaps -1 is extra! check
-                    ns <= init;
-				ELSE
-					ns <= registering;
-				END IF;
-			WHEN OTHERS =>
-					ns <= init;
-		END CASE;
-	END PROCESS;
 
+	
+	
+--	PROCESS ( ps,  done, TREADY_S)
+--	BEGIN 
+--	TLAST_S <= '0';
+--    TVALID_S <= '0';
+--		CASE (ps) IS 
+--			WHEN init =>
+--                IF ( done = '1') THEN
+--                 --TLAST_S <= '1';
+--                 --TVALID_S <= '1';
+--                    ns <= registering;
+--                Else
+--                    ns <= init;
+--                END IF;
+--            --ns <= registering;
+--			WHEN registering =>
+--                TLAST_S <= '1';
+--                TVALID_S <= '1';
+--                IF (TREADY_S = '1') THEN  --- perhaps -1 is extra! check
+--                    ns <= init;
+--				ELSE
+--					ns <= registering;
+--				END IF;
+--			WHEN OTHERS =>
+--					ns <= init;
+--		END CASE;
+--	END PROCESS;
+--    regTLAST_S : regOne 
+--	GENERIC MAP('0')
+--	PORT MAP(
+--		clk , done, rst, done, TLAST_S  
+--	);
+--    regTVALID_S : regOne 
+--	GENERIC MAP('0')
+--	PORT MAP(
+--		clk , done, rst, done, TVALID_S  
+--	);
 
 End architecture;

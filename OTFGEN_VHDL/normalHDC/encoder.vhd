@@ -13,7 +13,7 @@ ENTITY encoder IS
 		din			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
 		BV			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
 		rundegi		: OUT STD_LOGIC;
-		done		: OUT  STD_LOGIC;
+		done, ready_M		: OUT  STD_LOGIC;
 		dout		: OUT  STD_LOGIC_VECTOR (d-1 DOWNTO 0)
 	);
 END ENTITY encoder;
@@ -48,7 +48,7 @@ COMPONENT  XoringPopCtrl IS
 	PORT (
 		clk, rst 				: IN STD_LOGIC;
 		run		 				: IN STD_LOGIC;
-		rundegi, update, doneI, doneII		    : OUT STD_LOGIC
+		rundegi, update, doneI, doneII, ready_M		    : OUT STD_LOGIC
 	);
 END COMPONENT;
 
@@ -73,7 +73,7 @@ BEGIN
 			GENERIC MAP(lgf)
 			PORT MAP(
 				clk , rst, update, doneI,
-				din(I), BV(d-I-1),
+				din(I), BV(I),
 				doutXOR((I+1)*lgf-1 DOWNTO (I)*lgf)
 			);
 	END GENERATE popCounters;	
@@ -82,11 +82,11 @@ BEGIN
 	GENERIC MAP(lgf, featureSize)
 	PORT MAP(
 		clk, rst, run,rundegi,
-		update, doneI, done
+		update, doneI, done, ready_M
 		);
 	
 	doutGen : FOR I IN 0 TO d-1 GENERATE
-			dout (d-1-I) <= '1' WHEN ( doutXOR((I+1)*lgf-1 DOWNTO (I)*lgf) > test) ELSE '0';
+			dout (I) <= '1' WHEN ( doutXOR((I+1)*lgf-1 DOWNTO (I)*lgf) > test) ELSE '0';
 	END GENERATE doutGen;
 	
 

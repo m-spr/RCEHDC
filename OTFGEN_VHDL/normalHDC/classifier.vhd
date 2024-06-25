@@ -13,7 +13,7 @@ ENTITY classifier  IS
 	PORT (
 		clk, rst, run  	: IN STD_LOGIC;	
 		hv        		: IN  STD_LOGIC_VECTOR(adI -1 DOWNTO 0);	
-		done       		: OUT  STD_LOGIC;	
+		done, TLAST_S, TVALID_S        		: OUT  STD_LOGIC;	
 		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 		classIndex 		: OUT  STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)   	
 	);
@@ -44,7 +44,7 @@ COMPONENT comparatorTop  IS
 	PORT (
 		clk, rst, run  	: IN STD_LOGIC;
 		a        		: IN  STD_LOGIC_VECTOR (n*len - 1 DOWNTO 0);    --- 16 = 2**4 ,,, 4 is LOG2(n)
-		done         	: OUT  STD_LOGIC;    							 --- final result is ready 
+		done , TLAST_S, TVALID_S         	: OUT  STD_LOGIC;    							 --- final result is ready 
 		classIndex 		: OUT  STD_LOGIC_VECTOR  (lgn-1 DOWNTO 0)  			 --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
 	);
 END COMPONENT;
@@ -71,7 +71,7 @@ BEGIN
 	PORT MAP(
 		clk, rst, dones,
 		toComp,
-		done,
+		done,TLAST_S, TVALID_S  ,
 		classIndex 
 	);
 
