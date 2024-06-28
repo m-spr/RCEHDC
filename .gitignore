@@ -6,3 +6,6 @@ data/
 vivado/
 MNISTmodels/
 test*
+*.coe
+*.mif
+connector.vhd
