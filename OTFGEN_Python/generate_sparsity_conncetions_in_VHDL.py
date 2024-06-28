@@ -9,12 +9,8 @@ import torchmetrics
 from tqdm import tqdm
 
 import torchhd
-from torchhd.models import Centroid
+from torchhd import Centroid
 from torchhd import embeddings
-
-import sympy as sp
-from sympy import Eq, Symbol, solve, N
-import math
 
 from torchvision import datasets
 from torchvision.transforms import transforms,ToTensor
@@ -22,13 +18,10 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import confusion_matrix
 
 import numpy as np
-import tensorflow as tf
 import random
 import sys
 import os
 torch.set_printoptions(threshold=sys.maxsize)
-
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
