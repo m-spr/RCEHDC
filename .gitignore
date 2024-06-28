@@ -6,3 +6,4 @@ data/
 vivado/
 MNISTmodels/
 test*
+/*sparse*/

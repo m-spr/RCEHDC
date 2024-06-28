@@ -94,7 +94,7 @@ endgroup
 ----------- apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins fulltopHDC_0/clk]
 
 
-
+# remember to make them 8 bits
 
 startgroup
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0
@@ -200,6 +200,10 @@ write_bd_tcl -force /localdata/sadmah00/github/RCD_E3HDC/DMA1/design_1.tcl
 
 file copy -force /localdata/sadmah00/github/RCD_E3HDC/DMA1/DMA1.runs/impl_1/design_1_wrapper.bit /localdata/sadmah00/github/RCD_E3HDC/DMA1/design_1.bit
 
+-----config
+startgroup
+set_property CONFIG.r {232} [get_bd_cells fulltopHDC_0]
+endgroup
 
 
 
@@ -208,7 +212,7 @@ write_hw_platform -fixed -include_bit -force -file /localdata/sadmah00/github/RC
 write_bd_tcl -force /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/design_1.tcl
 file copy -force /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.runs/impl_1/design_1_wrapper.bit /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/design_1.bit
 
-
+# DONE
 export_simulation -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.srcs/sources_1/bd/design_1/design_1.bd] -directory /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.ip_user_files/sim_scripts -ip_user_files_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.ip_user_files -ipstatic_source_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.ip_user_files/ipstatic -lib_map_path [list {modelsim=/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.cache/compile_simlib/modelsim} {questa=/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.cache/compile_simlib/questa} {xcelium=/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.cache/compile_simlib/xcelium} {vcs=/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.cache/compile_simlib/vcs} {riviera=/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
 report_ip_status -name ip_status 
 export_ip_user_files -of_objects  [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_1/DMA_1.srcs/sources_1/imports/normalHDC/fulltop.vhd] -no_script -reset -force -quiet

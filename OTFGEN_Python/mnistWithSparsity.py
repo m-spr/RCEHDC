@@ -238,7 +238,7 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         mystr = zeros + mystr
         #print(mystr)
         for m in range(number_of_confComp):
-            print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
+            #print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
             with open('../OTFGEN_VHDL/normalHDC/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
@@ -360,11 +360,11 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.flatten = torch.nn.Flatten()
         self.position = embeddings.Random(size * size, out_features)
-        self.value = embeddings.Level(levels, out_features)
+        self.value = embeddings.Level(levels, out_features, high=NUM_LEVELS-1)
         #### my levels
         levels = []
         for number in range(NUM_LEVELS):
-            print(number, end = ", ")
+            #print(number, end = ", ")
             my_list = []
             if number == 0:
                 my_list = [-1]*(DIMENSIONS)
@@ -398,8 +398,8 @@ class Encoder(nn.Module):
         init_num = 8598160843007061747897185227660226480699462048612415753135844784575931557250333609802704768448038340188781333334674280604412808714738397669691036818117216562906539697629854344048943585800309793912469467244045444899612664963418760888341082296220556422523992569322910744501711965482581000978236244936734
         XORs_num = random.randint(2**(out_features-1), 2**out_features)
         XORs_num = 7147397622480205887766028692471697427605422909028161031887254853802591491407897813890041426398247694774327394176142826705388615588568507609900023787604859291706465087636016608158055531088493454828919879700934867051395797335949831338249880525464665204175483819506465991487633210399346632591090279324684
-        print(init_num)
-        print(XORs_num)
+        #print(init_num)
+        #print(XORs_num)
         init = [eval(i) for i in [*bin(init_num)[2:]]]
         init.extend([0] * (out_features - len(init)))
         XORs = [i for i, x in enumerate(reversed([*bin(XORs_num)[2:]])) if x == '1']
@@ -461,7 +461,7 @@ print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 torch.save(model.weight, "MNISTmodels/mnist.pt")
 torch.save(encode, "MNISTmodels/enc_mnist.pt")
 #print(encode)
-print(st(model.weight[0]))
+#print(st(model.weight[0]))
 
 ls = class_sparsity (model.weight)
 
