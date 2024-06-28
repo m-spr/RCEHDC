@@ -3,7 +3,7 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 USE std.textio.ALL;
 
-ENTITY fullconfComp  IS
+ENTITY sparseconfComp  IS
 	GENERIC (n : INTEGER := 10;		 --; 	-- bit--widths of memory pointer, counter and etc,,, 
 		classNumber : INTEGER := 10; 		---- class number --- for memory image
 		classPortion : INTEGER := 10 ); 		---- portion of class memory --- for memory image
@@ -14,9 +14,9 @@ ENTITY fullconfComp  IS
 		pointer		 	: IN STD_LOGIC_VECTOR(n-1 DOWNTO 0);	
 		sim		 	: OUT  STD_LOGIC_VECTOR(n-1 DOWNTO 0)  	
 	);
-END ENTITY fullconfComp ;
+END ENTITY sparseconfComp ;
 
-ARCHITECTURE behavioral OF fullconfComp IS
+ARCHITECTURE behavioral OF sparseconfComp IS
 COMPONENT popCount IS
 	GENERIC ( lenPop : INTEGER := 8 );   -- bit width out popCounters
 	PORT (
@@ -36,7 +36,7 @@ COMPONENT reg IS
 	);
 END COMPONENT;
 
-file mif_file : text open read_mode is "full"&integer'image(integer(classNumber))&"_"&integer'image(integer(classPortion))&".mif";
+file mif_file : text open read_mode is "sparse"&integer'image(integer(classNumber))&"_"&integer'image(integer(classPortion))&".mif";
 
 SIGNAL class : STD_LOGIC_VECTOR ((2**n)-1 DOWNTO 0);-- := to_stdlogicvector(temp_bv); -- := STD_LOGIC_VECTOR(TO_UNSIGNED(consInt, 2**n));
 SIGNAL toPop, popRST, regRST, memOut : STD_LOGIC;
@@ -44,7 +44,10 @@ SIGNAL count : STD_LOGIC_VECTOR (n-1 DOWNTO 0);
 
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of class : signal is "TRUE";
-attribute MARK_DEBUG of memout : signal is "TRUE";
+attribute MARK_DEBUG of memOut : signal is "TRUE";
+attribute MARK_DEBUG of hv : signal is "TRUE";
+attribute MARK_DEBUG of toPop : signal is "TRUE";
+attribute MARK_DEBUG of count : signal is "TRUE";
 BEGIN
 	process (clk)
 	variable mif_line : line;

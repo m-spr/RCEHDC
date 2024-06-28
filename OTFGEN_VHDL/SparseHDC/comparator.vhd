@@ -12,5 +12,5 @@ END ENTITY comparator ;
 
 ARCHITECTURE behavioral OF comparator  IS
 BEGIN
-	gr <= '1' WHEN a > b ELSE '0';    --condition != STD_LOGIC_VECTOR (UNSIGNED(0)) ELSE '0';
+	gr <= '1' WHEN a >= b ELSE '0';    --condition != STD_LOGIC_VECTOR (UNSIGNED(0)) ELSE '0';
 END ARCHITECTURE behavioral;
