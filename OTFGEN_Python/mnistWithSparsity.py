@@ -27,7 +27,7 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-DIMENSIONS = 1000
+DIMENSIONS = 1100
 IMG_SIZE = 28
 NUM_LEVELS = 256
 c = int(math.floor(DIMENSIONS/NUM_LEVELS))
@@ -176,9 +176,9 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d):
         strinit2 = ""
         for i in range(len(ini)):
             if ini[i] == -1 :
-                strinit2 = strinit2 + '0'
+                strinit2 = '0' + strinit2  
             else :
-                strinit2 = strinit2 + '1'
+                strinit2 = '1' + strinit2 
         weight_mem.append(strinit2)
     #strinit = weight_mem[0]
     with open('mem/congigInitialvalues.mif', 'w') as output:
@@ -231,9 +231,9 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         for m in a[k]:
             
             if m > 0 :
-                mystr = mystr +  '1'
+                mystr =  "1" + mystr
             else:
-                mystr = mystr +  '0'
+                mystr =  "0" + mystr
         zeros = '0'*zeropadding
         mystr = zeros + mystr
         #print(mystr)
@@ -395,9 +395,9 @@ class Encoder(nn.Module):
         self.value.weight = tArr.float()
 
         init_num = random.randint(1, 2**out_features)
-        init_num = 8598160843007061747897185227660226480699462048612415753135844784575931557250333609802704768448038340188781333334674280604412808714738397669691036818117216562906539697629854344048943585800309793912469467244045444899612664963418760888341082296220556422523992569322910744501711965482581000978236244936734
+        #init_num = 8598160843007061747897185227660226480699462048612415753135844784575931557250333609802704768448038340188781333334674280604412808714738397669691036818117216562906539697629854344048943585800309793912469467244045444899612664963418760888341082296220556422523992569322910744501711965482581000978236244936734
         XORs_num = random.randint(2**(out_features-1), 2**out_features)
-        XORs_num = 7147397622480205887766028692471697427605422909028161031887254853802591491407897813890041426398247694774327394176142826705388615588568507609900023787604859291706465087636016608158055531088493454828919879700934867051395797335949831338249880525464665204175483819506465991487633210399346632591090279324684
+        #XORs_num = 7147397622480205887766028692471697427605422909028161031887254853802591491407897813890041426398247694774327394176142826705388615588568507609900023787604859291706465087636016608158055531088493454828919879700934867051395797335949831338249880525464665204175483819506465991487633210399346632591090279324684
         #print(init_num)
         #print(XORs_num)
         init = [eval(i) for i in [*bin(init_num)[2:]]]
@@ -465,8 +465,8 @@ torch.save(encode, "MNISTmodels/enc_mnist.pt")
 
 ls = class_sparsity (model.weight)
 
-print ("sparse model: ", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
-print ("Normal model: ", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("sparse model:", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("Normal model:  \npixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa\n", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
 pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn,r, x  = config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
 Sparsemodule(ls)
 class_normalize_memory (model.weight, 2**n, adI, (2**n)*adI - d)
@@ -475,7 +475,7 @@ pixbit, d, sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn,r, x = sparseconfig
 class_normalize_memory_sparse (model.weight, 2**n, adI, (2**n)*adI - d, ls)
 
 """
-print ("Normal model: ", pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa )
+print ("Normal model:  \npixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa\n", pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa )
 print ("sparse model: ", DIMENSIONS, config (DIMENSIONS-spa, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
 
 #print(config (3000, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
