@@ -169,8 +169,9 @@ attribute MARK_DEBUG of indexdatamem11 : signal is "TRUE";
 attribute MARK_DEBUG of QHV : signal is "TRUE";
 attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
 attribute MARK_DEBUG of pointer : signal is "TRUE";
-attribute MARK_DEBUG of divToClass : signal is "TRUE";
+--attribute MARK_DEBUG of divToClass : signal is "TRUE";
 attribute MARK_DEBUG of done : signal is "TRUE";
+--attribute MARK_DEBUG of encoderTodiv : signal is "TRUE";
 
 BEGIN
 rst <= not(rstl);

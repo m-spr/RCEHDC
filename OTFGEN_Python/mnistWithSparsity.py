@@ -27,7 +27,7 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-DIMENSIONS = 1100
+DIMENSIONS = 1000
 IMG_SIZE = 28
 NUM_LEVELS = 256
 c = int(math.floor(DIMENSIONS/NUM_LEVELS))
@@ -239,7 +239,7 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         #print(mystr)
         for m in range(number_of_confComp):
             #print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
-            with open('../OTFGEN_VHDL/normalHDC/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+            with open('../OTFGEN_VHDL/1/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
 def class_normalize_memory2 (a, mem_size, number_of_confComp, zeropadding):

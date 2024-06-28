@@ -7,3 +7,5 @@ vivado/
 MNISTmodels/
 test*
 /*sparse*/
+/OTFGEN_VHDL/1
+

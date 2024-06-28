@@ -26,15 +26,15 @@ ENTITY fulltopHDC IS
         clk		    : IN STD_LOGIC; 
         rst		    : IN STD_LOGIC; 
         TVALID_M         : IN STD_LOGIC;         
-        TDATA_M		: IN STD_LOGIC_VECTOR(31 DOWNTO 0);
-        TKEEP_M		: IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        TDATA_M		: IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+        TKEEP_M		: IN STD_LOGIC_VECTOR(0 DOWNTO 0);
         TREADY_S        : IN STD_LOGIC;   
         TLAST_M        : IN STD_LOGIC;    
         TREADY_M        : OUT STD_LOGIC;    -- should be always '1' as of now! for DMA only
         TVALID_S         : OUT STD_LOGIC;         
         TLAST_S         : OUT STD_LOGIC;         
-        TDATA_S  : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
-        TKEEP_S  : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
+        TDATA_S  : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+        TKEEP_S  : OUT STD_LOGIC_VECTOR(0 DOWNTO 0)
     );
 END ENTITY fulltopHDC;
 
@@ -42,7 +42,7 @@ ARCHITECTURE behavioral OF fulltopHDC IS
 
 component OTFGEn IS
     GENERIC
-    (	 pixbit		:INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
+    (	 pixbit		: INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
         d           : INTEGER := 2000; -- dimension size
         lgf         : INTEGER := 10; -- bit width out popCounters --- LOG2(#feature)
         c           : INTEGER := 10; ---- #Classes
@@ -119,14 +119,14 @@ BEGIN
         classIndex 
     );
      
-    pixelIn <= TDATA_M(pixbit-1 DOWNTO 0);
+    pixelIn <= TDATA_M;
 	run <= TVALID_M; 
     
     --TREADY_M <= not(TLAST_M);
     ---TREADY_M <= '1';
     
-    TDATA_S <= outreg0(31 downto lgCn) & classIndex;
-    TKEEP_S<= "1111";
+    TDATA_S <= "0000" & classIndex;
+    TKEEP_S<= "1";
     
     PROCESS(clk) BEGIN 
 		IF rising_edge(clk) then

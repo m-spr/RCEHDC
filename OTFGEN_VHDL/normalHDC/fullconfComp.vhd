@@ -44,6 +44,7 @@ SIGNAL count : STD_LOGIC_VECTOR (n-1 DOWNTO 0);
 
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of class : signal is "TRUE";
+attribute MARK_DEBUG of memout : signal is "TRUE";
 BEGIN
 	process (clk)
 	variable mif_line : line;
