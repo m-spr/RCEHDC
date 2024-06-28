@@ -8,4 +8,6 @@ MNISTmodels/
 test*
 /*sparse*/
 /OTFGEN_VHDL/1
+*.mif
+*.coe
 
