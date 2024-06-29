@@ -160,6 +160,7 @@ def genConfig (XORs, init_num, DIMENSIONS):
         output.write(strinit[::-1])
 
 def write_memory(XORs, init_num, posision, NUM_LEVELS,d):
+    print("write_memory")
     strXors = ""
     for i in range(DIMENSIONS):
         if i in XORs :
@@ -228,14 +229,14 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         for m in a[k]:
             
             if m > 0 :
-                mystr = mystr +  '1'
+                mystr =  mystr + "1" 
             else:
-                mystr = mystr +  '0'
+                mystr =  mystr + "0" 
         zeros = '0'*zeropadding
         mystr = zeros + mystr
-        #print(mystr)
+        #print("     ",k ,"  : ",mystr)
         for m in range(number_of_confComp):
-            print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
+            #print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
             with open('../OTFGEN_VHDL/normalHDC/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
@@ -361,7 +362,7 @@ class Encoder(nn.Module):
         #### my levels
         levels = []
         for number in range(NUM_LEVELS):
-            print(number, end = ", ")
+            #print(number, end = ", ")
             my_list = []
             if number == 0:
                 my_list = [-1]*(DIMENSIONS)
@@ -392,9 +393,9 @@ class Encoder(nn.Module):
         self.value.weight = tArr.float()
 
         init_num = random.randint(1, 2**out_features)
-        #init_num = 8598160843007061747897185227660226480699462048612415753135844784575931557250333609802704768448038340188781333334674280604412808714738397669691036818117216562906539697629854344048943585800309793912469467244045444899612664963418760888341082296220556422523992569322910744501711965482581000978236244936734
+        #init_num = 4005700534675144948017520162097884868995542063410121040524186571954440390130004122707793153004062360041636382462054526905859450700091502234942087738732084346636139513840569559345488256204180986892293042541798471825399139750542421374166982260754066786698152028283234760575400288349132987005389102090211
         XORs_num = random.randint(2**(out_features-1), 2**out_features)
-        #XORs_num = 7147397622480205887766028692471697427605422909028161031887254853802591491407897813890041426398247694774327394176142826705388615588568507609900023787604859291706465087636016608158055531088493454828919879700934867051395797335949831338249880525464665204175483819506465991487633210399346632591090279324684
+        #XORs_num = 8304480432096973745855277495005820904147225062766752395232516640190584805313156405292672642268352808496341593728537662541323806162655398579460968638548439233518083677818779822153866372461399193020495636799816940385452684276171359521470779611083416341728702669855951160018696384825076986035152844977163
         print(init_num)
         print(XORs_num)
         init = [eval(i) for i in [*bin(init_num)[2:]]]
@@ -441,7 +442,7 @@ model.normalize(quantize=True)
 with torch.no_grad():
     print_flag = 1
     count = 0
-    for samples, labels in tqdm(test_ld, desc="Testing"):
+    for samples, labels in test_ld:
         count = count + 1
         if count %850 == 0:
             print_flag = 1
@@ -458,12 +459,12 @@ print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 torch.save(model.weight, "MNISTmodels/mnist.pt")
 torch.save(encode, "MNISTmodels/enc_mnist.pt")
 #print(encode)
-print(st(model.weight[0]))
+#print("0 for 0 ", model.weight[0])
 
 ls = class_sparsity (model.weight)
 
-print ("sparse model: ", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
-print ("Normal model: ", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("sparse model:", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("Normal model:  \npixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x \n", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
 pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn,r, x  = config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
 Sparsemodule(ls)
 class_normalize_memory (model.weight, 2**n, adI, (2**n)*adI - d)
