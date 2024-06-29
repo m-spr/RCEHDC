@@ -95,7 +95,8 @@ component encoder IS
 END component;
 
 component classifier  IS
-	GENERIC ( c : INTEGER := 10;  ---- #Classes
+	GENERIC ( d : INTEGER := 1000; --- dimension size+zeropading
+	         c : INTEGER := 10;  ---- #Classes
 			 n : INTEGER := 7;	  -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,,
 			 adI : INTEGER := 5;		-- number of confComp module, or adderInput and = ceiling(D/(2^n))
 			 adz  : INTEGER := 3;		 -- zeropadding for RSA = 2**? - adI
@@ -104,7 +105,7 @@ component classifier  IS
 			 logn : INTEGER := 3	);   -- MuxCell RSA, ceilingLOG2(#popCounters)
 	PORT (
 		clk, rst, run  	: IN STD_LOGIC;
-		hv        		: IN  STD_LOGIC_VECTOR(adI -1 DOWNTO 0);
+		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);
 		done, TLAST_S, TVALID_S        		: OUT  STD_LOGIC;
 		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 		classIndex 		: OUT  STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)
@@ -230,24 +231,24 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 		QHV
 	);
 
-	div: hvTOcompIn
-    GENERIC MAP
-    (
-        adI*(2**n), n, adI
-	)
-    PORT map
-    (
-        clk, rst,
-        encoderTodiv,
-        pointer,
-        divToClass
-    );
+--	div: hvTOcompIn
+--    GENERIC MAP
+--    (
+--        adI*(2**n), n, adI
+--	)
+--    PORT map
+--    (
+--        clk, rst,
+--        encoderTodiv,
+--        pointer,
+--        divToClass
+--    );
 
 	cls: classifier
-	GENERIC map ( c, n, adI, adz, zComp ,lgCn, logn)
+	GENERIC map ( adI*(2**n), c, n, adI, adz, zComp ,lgCn, logn)
 	PORT map(
 		clk, rst, doneEncoderToClassifier,
-		divToClass,
+		encoderTodiv,
 		done, TLAST_S, TVALID_S, pointer,
 		classIndex
 	);

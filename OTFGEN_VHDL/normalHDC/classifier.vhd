@@ -3,7 +3,8 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY classifier  IS
-	GENERIC (c : INTEGER := 10;  ---- #Classes
+	GENERIC (d : INTEGER := 1000; --- dimension size+zeropading
+	         c : INTEGER := 10;  ---- #Classes
 			 n : INTEGER := 7;	  -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,, 
 			 adI : INTEGER := 5;		-- number of confComp module, or adderInput and = ceiling(D/(2^n))
 			 adz  : INTEGER := 3;		 -- zeropadding for RSA = 2**? - adI 
@@ -11,8 +12,8 @@ ENTITY classifier  IS
 			 lgCn : INTEGER := 4; 	-- ceilingLOG2(#Classes)
 			 logn : INTEGER := 3	);   -- MuxCell RSA, ceilingLOG2(#popCounters)
 	PORT (
-		clk, rst, run  	: IN STD_LOGIC;	
-		hv        		: IN  STD_LOGIC_VECTOR(adI -1 DOWNTO 0);	
+		clk, rst, run  	: IN STD_LOGIC;		
+		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);	
 		done, TLAST_S, TVALID_S        		: OUT  STD_LOGIC;	
 		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 		classIndex 		: OUT  STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)   	
@@ -48,21 +49,26 @@ COMPONENT comparatorTop  IS
 		classIndex 		: OUT  STD_LOGIC_VECTOR  (lgn-1 DOWNTO 0)  			 --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
 	);
 END COMPONENT;
-
+SIGNAL hvTOcount      :  STD_LOGIC_VECTOR(adI -1 DOWNTO 0);
 SIGNAL dones  :  STD_LOGIC;	
 SIGNAL toComp	:  STD_LOGIC_VECTOR(c*(n+logn)-1 DOWNTO 0);
+SIGNAL point	:  STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of toComp : signal is "TRUE";
+attribute MARK_DEBUG of hvTOcount : signal is "TRUE";
 
 BEGIN 
-
+    concat: FOR I IN adI-1 DOWNTO 0 GENERATE
+		hvTOcount(I) <= hv(to_integer(unsigned(point))+(2**n)*I);
+	END GENERATE concat;
+	
 	CST : countingSimTop 
 	GENERIC MAP(n, adI, adz, c, logn ) 
 	PORT MAP(
 		clk, rst, run, 
-		hv,
+		hvTOcount,
 		dones,
-		pointer,
+		point,
 		toComp
 	);
 	
@@ -76,5 +82,5 @@ BEGIN
 	);
 
 
-
+pointer <= point;
 END ARCHITECTURE;
