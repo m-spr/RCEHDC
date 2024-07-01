@@ -8,7 +8,7 @@ ENTITY XoringPopCtrl IS
 	PORT (
 		clk, rst 				: IN STD_LOGIC;
 		run		 				: IN STD_LOGIC;
-		
+		counter                  : OUT STD_LOGIC_VECTOR (n-1 DOWNTO 0);
 		rundegi, update, doneI, doneII, ready_M		    : OUT STD_LOGIC
 	);
 END ENTITY XoringPopCtrl;
@@ -113,6 +113,6 @@ BEGIN
 			runPOP,
 			count
 		);
-		
+	counter <= count;	
 	update <= runPOP;
 END ARCHITECTURE ctrl;

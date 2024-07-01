@@ -57,25 +57,20 @@ COMPONENT popCount IS
 			dout        : OUT  STD_LOGIC_VECTOR (lenPop-1 DOWNTO 0)
 		);
 	END COMPONENT;
-component BasedVectorLFSR IS
-	GENERIC ( n	: INTEGER	:= 2000;			    -- number of bits
-			  s	: INTEGER	:= 8;   		    -- signiture in decimal
-			  i	: INTEGER	:= 8    		    -- initialvalues in decimal
-				);
-	PORT (
-		clk, rst, update	: IN STD_LOGIC;
-		dout	: OUT  STD_LOGIC_VECTOR (n-1 DOWNTO 0 )
-	);
+component blk_mem_gen_3 IS
+  PORT (
+    clka : IN STD_LOGIC;
+    addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
+    douta : OUT STD_LOGIC_VECTOR(999 DOWNTO 0)
+  );
 end component;
 
-component idLevel3 is
-    GENERIC (n : INTEGER := 7;		 		 	-- bit-widths input
-			 c 	: INTEGER := 2; 				-- coeficient of increasment!
-			 r  : INTEGER := 2;                  -- remainder from division
-			 hv : INTEGER := 500		 	 	-- hyperdimesional size
-			 );
-	Port ( values : in STD_LOGIC_VECTOR (n-1 DOWNTO 0);
-           idVector : out STD_LOGIC_VECTOR (hv-1 DOWNTO 0));
+component blk_mem_gen_2 IS
+  PORT (
+    clka : IN STD_LOGIC;
+    addra : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+    douta : OUT STD_LOGIC_VECTOR(999 DOWNTO 0)
+  );
 end component;
 
 component encoder IS
@@ -90,6 +85,7 @@ component encoder IS
 		BV			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
 		rundegi		: OUT STD_LOGIC;
 		done, ready_M		: OUT  STD_LOGIC;
+		counter                  : OUT STD_LOGIC_VECTOR (lgf-1 DOWNTO 0);
 		dout		: OUT  STD_LOGIC_VECTOR (d-1 DOWNTO 0)
 	);
 END component;
@@ -151,6 +147,7 @@ signal pixelreg		: STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
 signal BV : std_logic_vector ( d - 1 DOWNTO 0);
 signal divToClass : std_logic_vector ( adI - 1 DOWNTO 0);
 signal pointer	: STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+signal counter       :  STD_LOGIC_VECTOR (lgf-1 DOWNTO 0);
 signal classIndexI :  STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
 constant encodeVecZero	: STD_LOGIC_VECTOR( adI*(2**n)-d-1 DOWNTO 0) := (others =>'0');
 signal indexdatamem : STD_LOGIC_VECTOR(14 DOWNTO 0);
@@ -170,7 +167,7 @@ attribute MARK_DEBUG of indexdatamem11 : signal is "TRUE";
 attribute MARK_DEBUG of QHV : signal is "TRUE";
 attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
 attribute MARK_DEBUG of pointer : signal is "TRUE";
---attribute MARK_DEBUG of divToClass : signal is "TRUE";
+attribute MARK_DEBUG of counter : signal is "TRUE";
 attribute MARK_DEBUG of done : signal is "TRUE";
 --attribute MARK_DEBUG of encoderTodiv : signal is "TRUE";
 
@@ -200,9 +197,8 @@ pop : 	popCount
 		);
 bvrst <= rst OR doneEncoderToClassifier or rstpop;
 	
-    idGen: idLevel3
-    GENERIC map(pixbit, x, r, d)
-	Port map( pixel, ---- pixelreg,
+    idGen: blk_mem_gen_2
+	Port map( clk , pixel,
            idLevelOut
     );
     
@@ -214,21 +210,20 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 --		idLevelOutreg
 --	);
 
-	BVGen: BasedVectorLFSR
-	GENERIC map( d, 8, 8 )
-	PORT MAP		(
-		clk, bvrst, rundegi,
-		BV
-	);
+	BVGen: blk_mem_gen_3 
+    PORT MAP(
+        clk,
+        counter,
+        BV);
 
 	enc: encoder
 	GENERIC map(
 			d, lgf, featureSize
 			)
-	PORT map( clk, rst, run,
+	PORT map( clk, rst, run, 
 		idLevelOut, BV, rundegi, 
 		doneEncoderToClassifier, ready_M,
-		QHV
+		counter, QHV
 	);
 
 --	div: hvTOcompIn
