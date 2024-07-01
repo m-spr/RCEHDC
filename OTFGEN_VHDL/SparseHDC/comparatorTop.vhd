@@ -10,7 +10,7 @@ ENTITY comparatorTop  IS
 	PORT (
 		clk, rst, run  	: IN STD_LOGIC;
 		a        		: IN  STD_LOGIC_VECTOR (n*len - 1 DOWNTO 0);    --- 16 = 2**4 ,,, 4 is LOG2(n)
-		done         	: OUT  STD_LOGIC;    							 --- final result is ready 
+		done  , TLAST_S, TVALID_S        	: OUT  STD_LOGIC;    							 --- final result is ready 
 		classIndex 		: OUT  STD_LOGIC_VECTOR  (lgn-1 DOWNTO 0)  			 --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
 			);
 END ENTITY comparatorTop ;
@@ -38,7 +38,7 @@ ARCHITECTURE behavioral OF comparatorTop  IS
 		PORT (
 			clk, rst 				: IN STD_LOGIC;
 			run		 				: IN STD_LOGIC;
-			runOut, done 			: OUT STD_LOGIC;
+			runOut, done , TLAST_S, TVALID_S 			: OUT STD_LOGIC;
 			pointer 				: OUT STD_LOGIC_VECTOR(lgn-1 DOWNTO 0) --- As of now only support up to 16 classes so 4'bits 
 		);
 	END COMPONENT;
@@ -82,7 +82,7 @@ BEGIN
 		GENERIC MAP( n, lgn )	
 		PORT MAP(
 			clk, rst, run,	
-			regrst, doneI, muxSel 
+			regrst, doneI, TLAST_S, TVALID_S, muxSel 
 		);
 	
 	CompMux : recMux 
@@ -110,6 +110,7 @@ BEGIN
 			toComp ,muxOut,
 			regUpdate     --- case of a >= b gr ='1' other wise 0
 		);	
+	
 	done <= doneI;
 	muxSelE <= '0'&muxSel;
 	classIndexI2 <= std_logic_vector(unsigned(n-1-unsigned(classIndexI)));

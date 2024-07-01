@@ -8,7 +8,7 @@ ENTITY confCompCtrl IS
 	PORT (
 		clk, rst 				: IN STD_LOGIC;
 		run		 				: IN STD_LOGIC;
-		runOut, done 			: OUT STD_LOGIC;
+		runOut, done , TLAST_S, TVALID_S			: OUT STD_LOGIC;
 		pointer 				: OUT STD_LOGIC_VECTOR(lgn-1 DOWNTO 0) --- As of now only support up to 16 classes so 4'bits 
 	);
 END ENTITY confCompCtrl;
@@ -23,7 +23,7 @@ ARCHITECTURE ctrl OF confCompCtrl IS
 		);
 	END COMPONENT;
 	SIGNAL count : STD_LOGIC_VECTOR (lgn-1 DOWNTO 0);
-	TYPE state IS  (init,  counting);
+	TYPE state IS  (init,  counting, busshand);
 	SIGNAL ns,  ps : state;
 	SIGNAL countEn , countRst : STD_LOGIC;
 BEGIN
@@ -44,6 +44,8 @@ BEGIN
 	countRst <= '0';
 	countEn <= '0';	
     done <= '0';
+    TLAST_S <= '0';	
+    TVALID_S <= '0';
 		CASE (ps) IS 
 			WHEN init =>
 				countRst <= '1';
@@ -61,12 +63,16 @@ BEGIN
 						runOut<= '1';
 						ns <= counting;
 					ELSE
-						ns <= init;
+						ns <= busshand;
 					END IF;
 				ELSE 
 					countEn <= '1';	
 					ns <= counting;
 				END IF;
+			WHEN busshand =>
+				TLAST_S <= '1';	
+				TVALID_S <= '1';
+				ns <= init;
 			WHEN OTHERS =>
 					ns <= init;
 		END CASE;
