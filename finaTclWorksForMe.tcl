@@ -80,9 +80,9 @@ create_bd_design "design_1" -------change design_1 with E3HDC
 update_compile_order -fileset sources_1
 --------
 startgroup
-create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0         ---- add to digram
+create_bd_cell -type ip -vlnv user.org:user:BasedVectorLFSR:1.0 BasedVectorLFSR_0         ---- add to digram
 endgroup
-delete_bd_objs [get_bd_cells fulltopHDC_0]  ---- remove form digram
+delete_bd_objs [get_bd_cells BasedVectorLFSR_0]  ---- remove form digram
 ---------
 startgroup
 create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0
@@ -90,9 +90,9 @@ endgroup
 apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" }  [get_bd_cells processing_system7_0]
 
 startgroup
-create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0
+create_bd_cell -type ip -vlnv user.org:user:BasedVectorLFSR:1.0 BasedVectorLFSR_0
 endgroup
------------ apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins fulltopHDC_0/clk]
+----------- apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins BasedVectorLFSR_0/clk]
 
 
 # remember to make them 8 bits
@@ -105,21 +105,21 @@ set_property -dict [list \
   CONFIG.c_include_sg {0} \
   CONFIG.c_sg_include_stscntrl_strm {0} \
 ] [get_bd_cells axi_dma_0]
-
+set_property CONFIG.c_m_axis_mm2s_tdata_width {8} [get_bd_cells axi_dma_0]
 
 startgroup
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_DMA_1
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_1
 endgroup
 set_property -dict [list \
   CONFIG.c_include_mm2s {0} \
   CONFIG.c_include_sg {0} \
   CONFIG.c_sg_include_stscntrl_strm {0} \
-] [get_bd_cells axi_DMA_1]
+] [get_bd_cells axi_dma_1]
+set_property CONFIG.c_m_axis_mm2s_tdata_width {8} [get_bd_cells axi_dma_1]
 
 
-
-connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] [get_bd_intf_pins fulltopHDC_0/S_AXI]
-connect_bd_intf_net [get_bd_intf_pins fulltopHDC_0/M_AXI] [get_bd_intf_pins axi_DMA_1/S_AXIS_S2MM]
+connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] [get_bd_intf_pins BasedVectorLFSR_0/S_AXI]
+connect_bd_intf_net [get_bd_intf_pins BasedVectorLFSR_0/M_AXI] [get_bd_intf_pins axi_DMA_1/S_AXIS_S2MM]
 
 
 ----ignore-----
@@ -140,7 +140,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Cl
 startgroup
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_0/S_AXI_LITE} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins axi_dma_0/S_AXI_LITE]
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_DMA_1/S_AXI_LITE} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins axi_DMA_1/S_AXI_LITE]
-apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins fulltopHDC_0/clk]
+apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins BasedVectorLFSR_0/clk]
 endgroup
 
 startgroup
@@ -180,6 +180,8 @@ set_property -dict [list \
 ] [get_bd_cells processing_system7_0]
 endgroup
 
+connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins smartconnect_0/aresetn]
+connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
 
 regenerate_bd_layout
 validate_bd_design
@@ -203,7 +205,7 @@ file copy -force /localdata/sadmah00/github/RCD_E3HDC/DMA_0/DMA_0.runs/impl_1/de
 
 -----config
 startgroup
-set_property CONFIG.r {232} [get_bd_cells fulltopHDC_0]
+set_property CONFIG.r {232} [get_bd_cells BasedVectorLFSR_0]
 endgroup
 
 
@@ -268,9 +270,76 @@ file copy -force /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_0/DMA_0.runs/im
 
 
 
+############MEMORY
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_BV
+set_property -dict [list \
+  CONFIG.Coe_File {/localdata/sadmah00/github/RCD_E3HDC/OTFGEN_Python/mem/BV_img.coe} \
+  CONFIG.Component_Name {blk_BV} \
+  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Interface_Type {Native} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+  CONFIG.Use_RSTB_Pin {false} \
+  CONFIG.Write_Depth_A {784} \            #should be setted
+  CONFIG.Write_Width_A {1000} \              #should be setted cant be more than 4000
+] [get_ips blk_BV]
+generate_target {instantiation_template} [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_BV/blk_BV.xci]
+update_compile_order -fileset sources_1
+generate_target all [get_files  /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_BV/blk_BV.xci]
+catch { config_ip_cache -export [get_ips -all blk_BV] }
+export_ip_user_files -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_BV/blk_BV.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_BV/blk_BV.xci]
+launch_runs blk_BV_synth_1 -jobs 8
+export_simulation -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_BV/blk_BV.xci] -directory /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/sim_scripts -ip_user_files_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files -ipstatic_source_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/ipstatic -lib_map_path [list {modelsim=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/modelsim} {questa=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/questa} {xcelium=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/xcelium} {vcs=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/vcs} {riviera=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+
+
+
+#ID
+
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_ID1
+set_property -dict [list \
+  CONFIG.Coe_File {/localdata/sadmah00/github/RCD_E3HDC/OTFGEN_Python/mem/ID_img.coe} \
+  CONFIG.Component_Name {blk_ID1} \
+  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Interface_Type {Native} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+  CONFIG.Use_RSTB_Pin {false} \
+  CONFIG.Write_Depth_A {256} \          
+  CONFIG.Write_Width_A {1000} \          
+] [get_ips blk_ID1]
+generate_target {instantiation_template} [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_ID1/blk_ID1.xci]
+update_compile_order -fileset sources_1
+generate_target all [get_files  /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_ID1/blk_ID1.xci]
+catch { config_ip_cache -export [get_ips -all blk_ID1] }
+export_ip_user_files -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_ID1/blk_ID1.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_ID1/blk_ID1.xci]
+launch_runs blk_ID1_synth_1 -jobs 8
+export_simulation -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_ID1/blk_ID1.xci] -directory /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/sim_scripts -ip_user_files_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files -ipstatic_source_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/ipstatic -lib_map_path [list {modelsim=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/modelsim} {questa=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/questa} {xcelium=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/xcelium} {vcs=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/vcs} {riviera=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
 
 
 
 
-
-
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_1
+set_property -dict [list \
+  CONFIG.Coe_File {/localdata/sadmah00/github/RCD_E3HDC/OTFGEN_Python/mem/ID_img.coe} \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {Single_Port_ROM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Write_Depth_A {256} \
+  CONFIG.Write_Width_A {1000} \
+] [get_ips blk_mem_gen_1]
+generate_target {instantiation_template} [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_mem_gen_1/blk_mem_gen_1.xci]
+generate_target all [get_files  /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_mem_gen_1/blk_mem_gen_1.xci]
+catch { config_ip_cache -export [get_ips -all blk_mem_gen_1] }
+export_ip_user_files -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_mem_gen_1/blk_mem_gen_1.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_mem_gen_1/blk_mem_gen_1.xci]
+launch_runs blk_mem_gen_1_synth_1 -jobs 8
+export_simulation -of_objects [get_files /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.srcs/sources_1/ip/blk_mem_gen_1/blk_mem_gen_1.xci] -directory /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/sim_scripts -ip_user_files_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files -ipstatic_source_dir /localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.ip_user_files/ipstatic -lib_map_path [list {modelsim=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/modelsim} {questa=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/questa} {xcelium=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/xcelium} {vcs=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/vcs} {riviera=/localdata/sadmah00/github/RCD_E3HDC/vivado/HDC_with_mem/HDC_with_mem.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
