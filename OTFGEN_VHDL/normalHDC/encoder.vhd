@@ -14,6 +14,7 @@ ENTITY encoder IS
 		BV			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
 		rundegi		: OUT STD_LOGIC;
 		done, ready_M		: OUT  STD_LOGIC;
+		counter                  : OUT STD_LOGIC_VECTOR (lgf-1 DOWNTO 0);
 		dout		: OUT  STD_LOGIC_VECTOR (d-1 DOWNTO 0)
 	);
 END ENTITY encoder;
@@ -48,6 +49,7 @@ COMPONENT  XoringPopCtrl IS
 	PORT (
 		clk, rst 				: IN STD_LOGIC;
 		run		 				: IN STD_LOGIC;
+		counter                  : OUT STD_LOGIC_VECTOR (n-1 DOWNTO 0);
 		rundegi, update, doneI, doneII, ready_M		    : OUT STD_LOGIC
 	);
 END COMPONENT;
@@ -81,7 +83,7 @@ BEGIN
 	ctrl :  XoringPopCtrl 
 	GENERIC MAP(lgf, featureSize)
 	PORT MAP(
-		clk, rst, run,rundegi,
+		clk, rst, run,counter, rundegi,
 		update, doneI, done, ready_M
 		);
 	

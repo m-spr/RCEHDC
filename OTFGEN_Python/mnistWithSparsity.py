@@ -46,6 +46,7 @@ test_ld = torch.utils.data.DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=Fa
 os.system('mkdir mem')
 os.system('mkdir mem/Xili_HDCMem')
 os.system('mkdir mem/sparseFiles')
+os.system('mkdir MNISTmodels')
 
 def memMinimizer (d, f):
     n = 2
@@ -100,10 +101,10 @@ def sparseconfig (DIMENSIONS, sparse, featureSize, NUM_LEVELS, classes):
     zComp =  2**(math.ceil(math.log2(classes)))-classes
     lgCn =  math.ceil(math.log2(classes))
     logn = math.ceil(math.log2(adI))
-    x = math.ceil(DIMENSIONS/NUM_LEVELS)
+    x = math.ceil(DIMENSIONS/NUM_LEVELS) ## why not floor? 
     if DIMENSIONS < x*NUM_LEVELS:
         x = x-1
-    return (pixbit, d, sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn, r,  x)
+    return (pixbit, d, d-sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn, r,  x)
 
   
 def config (DIMENSIONS, featureSize, NUM_LEVELS, classes):
@@ -159,7 +160,8 @@ def genConfig (XORs, init_num, DIMENSIONS):
         output.write("init\n")
         output.write(strinit[::-1])
 
-def write_memory(XORs, init_num, posision, NUM_LEVELS,d):
+def write_memory(XORs, init_num, posision, NUM_LEVELS,d, value):
+    print("write_memory")
     strXors = ""
     for i in range(DIMENSIONS):
         if i in XORs :
@@ -177,6 +179,15 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d):
             else :
                 strinit2 = strinit2 + '1'
         weight_mem.append(strinit2)
+    value_mem = []
+    for ini in value:
+        strinit2 = ""
+        for i in range(len(ini)):
+            if ini[i] == -1 :
+                strinit2 = strinit2 + '0'
+            else :
+                strinit2 = strinit2 + '1'
+        value_mem.append(strinit2)
     #strinit = weight_mem[0]
     with open('mem/configInitialvalues.mif', 'w') as output:
         output.write(str(weight_mem[0]))
@@ -228,49 +239,18 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         for m in a[k]:
             
             if m > 0 :
-                mystr = mystr +  '1'
+                mystr =  mystr + "1" 
             else:
-                mystr = mystr +  '0'
+                mystr =  mystr + "0" 
         zeros = '0'*zeropadding
         mystr = zeros + mystr
-        #print(mystr)
+        #print("     ",k ,"  : ",mystr)
         for m in range(number_of_confComp):
             #print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
-            with open('../OTFGEN_VHDL/normalHDC/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+
+            with open('../OTFGEN_VHDL/normalHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
-def class_normalize_memory2 (a, mem_size, number_of_confComp, zeropadding):
-    for k in range(len(a)):
-        for m in range (number_of_confComp):
-            mystr =""
-            if k == 1:
-                flag = 1
-            else:
-                flag = 0
-            if m != number_of_confComp-1:
-                for s in range(mem_size):
-                    #print((s+((m)*mem_size)))
-                    #print(s," -  ", m, " -  ", mem_size, " -  ", (s+((m)*mem_size)))
-                    if a[k][(s+((m)*mem_size))] > 0:
-                        mystr = mystr +  '1'
-                    else:
-                        mystr = mystr + '0'
-            else:
-                for s in range(mem_size-zeropadding):
-                    #print((s+((m)*mem_size)))
-                    if a[k][(s+((m)*mem_size))] > 0:
-                        mystr = mystr +  '1'
-                    else:
-                        mystr = mystr + '0'
-                zeros = '0'*zeropadding
-                mystr = zeros + mystr
-            # number_of_confComp-m OR m
-            with open('mem/Xili_HDCMem/full{}_{}.coe'.format(k, m), 'w') as output:
-                output.write("memory_initialization_radix=2;\n")
-                output.write("memory_initialization_vector=\n")
-                output.write(mystr)
-            with open('../OTFGEN_VHDL/normalHDC/full{}_{}.mif'.format(k, m), 'w') as output:
-                output.write(mystr)
     #for i in a:
     #    for j in a:
     #        print(str(i ^ j).count('1'), end=",	")
@@ -279,53 +259,74 @@ def Sparsemodule(ls):
     #os.system('mkdir MNISTmodels/sparseFiles')
     os.system('touch ../OTFGEN_VHDL/SparseHDC/connector.vhd')
     f = open('../OTFGEN_VHDL/SparseHDC/connector.vhd', "w")
-    f.write("LIBRARY IEEE; \nUSE IEEE.STD_LOGIC_1164.ALL; \nUSE IEEE.NUMERIC_STD.ALL; \n  \nENTITY connector IS \n\tPORT ( \n\t\tinput         : IN  STD_LOGIC_VECTOR ("+ str(d - 1)+" DOWNTO 0); \n\t\tpruneoutput        : OUT  STD_LOGIC_VECTOR ("+ str(len(ls)- 1)+" DOWNTO 0)      \n\t);\nEND ENTITY connector;\n\nARCHITECTURE behavioral OF connector  IS\nBEGIN\n")
+    f.write("LIBRARY IEEE; \nUSE IEEE.STD_LOGIC_1164.ALL; \nUSE IEEE.NUMERIC_STD.ALL; \n  \nENTITY connector IS \n\tGENERIC(d : INTEGER := 1000; ----dimentionsize \n\tp: INTEGER:= 1000 ); --- prunsize \n\tPORT ( \n\t\tinput         : IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0); \n\t\tpruneoutput        : OUT  STD_LOGIC_VECTOR (p-1 DOWNTO 0)      \n\t);\nEND ENTITY connector;\n\nARCHITECTURE behavioral OF connector  IS\nBEGIN\n")
     counter = 0 
     for i in range(1000):
         if i in ls:
-            f.write("pruneoutput("+str(counter)+") <= input("+str(i)+");\n")
+            pass
+        else:
+            f.write("\t pruneoutput("+str(counter)+") <= input("+str(i)+");\n")
             counter = counter + 1
     f.write('\nEND ARCHITECTURE behavioral;')
     f.close()
 
 def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
     for k in range(len(a)):
-        for m in range (number_of_confComp):
-            mystr =""
-            if k == 1:
-                flag = 1
+        mystr =""
+        for m in range(len(a[k])):
+            if m in ls:
+                pass
             else:
-                flag = 0
-            if m != number_of_confComp-1:
-                for s in range(mem_size):
-                    if (s+((m)*mem_size)) in ls:
-                        pass
-                        #print(s+((m)*mem_size), end = ", ")
-                    #print((s+((m)*mem_size)))
-                    #print(s," -  ", m, " -  ", mem_size, " -  ", (s+((m)*mem_size)))
-                    else:
-                        if a[k][(s+((m)*mem_size))] > 0:
-                            mystr = '1' + mystr
-                        else:
-                            mystr = '0' + mystr
-            else:
-                for s in range(mem_size-zeropadding):
-                    if (s+((m)*mem_size)) in ls:
-                        pass
-                        #print(s+((m)*mem_size), end = ", ")
-                    else:
-                        if a[k][(s+((m)*mem_size))] > 0:
-                            mystr = '1' + mystr
-                        else:
-                            mystr = '0' + mystr
-                zeros = '0'*zeropadding
-                mystr = zeros + mystr
-            with open('./mem/sparseFiles/sparse{}_{}.coe'.format(k, m), 'w') as output:
-                output.write("memory_initialization_radix=2;\n")
-                output.write("memory_initialization_vector=\n")
-                output.write(mystr)
-            with open('../OTFGEN_VHDL/SparseHDC/sparse{}_{}.mif'.format(k, m), 'w') as output:
-                output.write(mystr)
+                if a[k][m] > 0 :
+                    mystr =  mystr + "1" 
+                else:
+                    mystr =  mystr + "0" 
+        zeros = '0'*zeropadding
+        mystr = zeros + mystr
+        for m in range(number_of_confComp):
+            with open('../OTFGEN_VHDL/SparseHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+                output.write(mystr[mem_size*(m):mem_size*(m+1)])
+
+
+
+    # for k in range(len(a)):
+    #     for m in range (number_of_confComp):
+    #         mystr =""
+    #         if k == 1:
+    #             flag = 1
+    #         else:
+    #             flag = 0
+    #         if m != number_of_confComp-1:
+    #             for s in range(mem_size):
+    #                 if (s+((m)*mem_size)) in ls:
+    #                     pass
+    #                     #print(s+((m)*mem_size), end = ", ")
+    #                 #print((s+((m)*mem_size)))
+    #                 #print(s," -  ", m, " -  ", mem_size, " -  ", (s+((m)*mem_size)))
+    #                 else:
+    #                     if a[k][(s+((m)*mem_size))] > 0:
+    #                         mystr = '1' + mystr
+    #                     else:
+    #                         mystr = '0' + mystr
+    #         else:
+    #             for s in range(mem_size-zeropadding):
+    #                 if (s+((m)*mem_size)) in ls:
+    #                     pass
+    #                     #print(s+((m)*mem_size), end = ", ")
+    #                 else:
+    #                     if a[k][(s+((m)*mem_size))] > 0:
+    #                         mystr = '1' + mystr
+    #                     else:
+    #                         mystr = '0' + mystr
+    #             zeros = '0'*zeropadding
+    #             mystr = zeros + mystr
+    #             ----------------------------------------------------------------------
+    #         with open('./mem/sparseFiles/sparse{}_{}.coe'.format(k, m), 'w') as output:
+    #             output.write("memory_initialization_radix=2;\n")
+    #             output.write("memory_initialization_vector=\n")
+    #             output.write(mystr)
+    #         with open('../OTFGEN_VHDL/SparseHDC/sparse{}_{}.mif'.format(k, m), 'w') as output:
+    #             output.write(mystr)
 
 class LFSR:
     def __init__(self, init, XORs):
@@ -409,7 +410,7 @@ class Encoder(nn.Module):
         self.position.weight = tArr.float()
     
         #genConfig (XORs, init_num, DIMENSIONS)
-        write_memory(XORs, init_num, generated_sequence, NUM_LEVELS,DIMENSIONS)
+        write_memory(XORs, init_num, generated_sequence, NUM_LEVELS,DIMENSIONS, self.value.weight)
 
     def forward(self, x):
         x = self.flatten(x)
@@ -440,7 +441,7 @@ model.normalize(quantize=True)
 with torch.no_grad():
     print_flag = 1
     count = 0
-    for samples, labels in tqdm(test_ld, desc="Testing"):
+    for samples, labels in test_ld:
         count = count + 1
         if count %850 == 0:
             print_flag = 1
@@ -457,19 +458,19 @@ print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 torch.save(model.weight, "MNISTmodels/mnist.pt")
 torch.save(encode, "MNISTmodels/enc_mnist.pt")
 #print(encode)
-#print(st(model.weight[0]))
+#print("0 for 0 ", model.weight[0])
 
 ls = class_sparsity (model.weight)
-
-print ("Normal model: ", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
-print ("sparse model: ", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print(ls)
+print ("sparse model:", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
+print ("Normal model:  \npixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x \n", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
 pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn,r, x  = config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
 Sparsemodule(ls)
 class_normalize_memory (model.weight, 2**n, adI, (2**n)*adI - d)
 
 pixbit, d, sparse, lgf, c, f, n, adI, adz, zComp, lgCn, logn,r, x = sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight))
-class_normalize_memory_sparse (model.weight, 2**n, adI, (2**n)*adI - d, ls)
 
+class_normalize_memory_sparse (model.weight, 2**n, adI, (2**n)*adI- (sparse), ls)
 """
 print ("Normal model: ", pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x , DIMENSIONS-spa )
 print ("sparse model: ", DIMENSIONS, config (DIMENSIONS-spa, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
