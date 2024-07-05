@@ -9,7 +9,8 @@ test*
 *.coe
 *.mif
 connector.vhd
-/*sparse*/
 *.mif
 *.coe
+*.xpr
+*.xml
 
