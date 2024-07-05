@@ -69,7 +69,7 @@ def class_sparsity (a):     # a is model.weight
     #class1 = torch.load( 'mnist_LFSREncoder_quantize_True_ret_1000.pt' , map_location=torch.device('cpu'))
     count = 0
     ls = []
-    for j in range(len(a[1])):
+    for j in range(len(a[0])):
         m = a[0][j]
         n = 0
         for i in range(len(a)):
@@ -80,6 +80,7 @@ def class_sparsity (a):     # a is model.weight
             ls.append(j)
     print("Number of pruning: ",count)
     return(ls)
+
 def st(hv):
     str = ""
     for i in hv:
@@ -210,6 +211,19 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d, value):
             output.write(i)
             #output.write('"')
             output.write(",\n")
+    
+
+def BV_ID_memory_sparse (posision, ls):
+    weight_mem = []
+    with open('mem/BV_img_sparse.mif', 'w') as output:
+        print(len(posision))
+        for ini in posision:
+            indices_to_keep = [i not in ls for i in np.arange(0,len(ini))]
+            mystr = "".join(["1" if a_i > 0 else "0" for a_i in ini[indices_to_keep]])  # for c in range(len(a))]
+            output.write(mystr)
+            output.write("\n")
+
+
     ########## old version 
     # id_mem = []
     # poniter =  math.ceil(math.log2(NUM_LEVELS))
@@ -239,7 +253,9 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d, value):
     #         output.write("\n")
 
 def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
+    print("class_normalize_memory")
     for k in range(len(a)):
+        print(st(a[k]))
         mystr =""
         #print(a[k])
         for m in a[k]:
@@ -266,32 +282,52 @@ def Sparsemodule(ls):
     f = open('../OTFGEN_VHDL/SparseHDC/connector.vhd', "w")
     f.write("LIBRARY IEEE; \nUSE IEEE.STD_LOGIC_1164.ALL; \nUSE IEEE.NUMERIC_STD.ALL; \n  \nENTITY connector IS \n\tGENERIC(d : INTEGER := 1000; ----dimentionsize \n\tp: INTEGER:= 1000 ); --- prunsize \n\tPORT ( \n\t\tinput         : IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0); \n\t\tpruneoutput        : OUT  STD_LOGIC_VECTOR (p-1 DOWNTO 0)      \n\t);\nEND ENTITY connector;\n\nARCHITECTURE behavioral OF connector  IS\nBEGIN\n")
     counter = 0 
-    for i in range(1000):
+    for i in range(DIMENSIONS):
         if i in ls:
             pass
         else:
-            f.write("\t pruneoutput("+str(counter)+") <= input("+str(i)+");\n")
+            f.write("\t pruneoutput("+str(DIMENSIONS- len(ls) - counter-1)+") <= input("+str(DIMENSIONS-i-1)+");\n")
             counter = counter + 1
     f.write('\nEND ARCHITECTURE behavioral;')
     f.close()
 
+# def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
+#     for k in range(len(a)):
+#         mystr =""
+#         for m in range(len(a[k])):
+#             if m in ls:
+#                 pass
+#             else:
+#                 if a[k][m] > 0 :
+#                     mystr =  "1" + mystr
+#                 else:
+#                     mystr =  "0" + mystr 
+#         zeros = '0'*zeropadding
+#         mystr = zeros + mystr
+#         print(mystr)
+#         for m in range(number_of_confComp):
+#             with open('../OTFGEN_VHDL/SparseHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+#                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
+
 def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
     for k in range(len(a)):
         mystr =""
-        for m in range(len(a[k])):
-            if m in ls:
-                pass
-            else:
-                if a[k][m] > 0 :
-                    mystr =  mystr + "1" 
-                else:
-                    mystr =  mystr + "0" 
+        indices_to_keep = [i not in ls for i in np.arange(0,len(a[k]))]
+        mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])  # for c in range(len(a))]
+        # for m in range(len(a[k])):
+        #     if m in ls:
+        #         pass
+        #     else:
+        #         if a[k][m] > 0 :
+        #             mystr =  mystr + "1" 
+        #         else:
+        #             mystr =  mystr + "0" 
         zeros = '0'*zeropadding
         mystr = zeros + mystr
+        print(mystr)
         for m in range(number_of_confComp):
             with open('../OTFGEN_VHDL/SparseHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
-
 
 
     # for k in range(len(a)):
@@ -414,7 +450,8 @@ class Encoder(nn.Module):
         #np.save("./mem/mnist_bv.npy", arr)
         tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
         self.position.weight = tArr.float()
-    
+        #ls = [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 16, 17, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 37, 38, 39, 42, 43, 44, 49, 50, 51, 52, 53, 54, 55, 59, 60, 61, 64, 65, 66, 67, 68, 69, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 118, 121, 123, 124, 125, 126, 127, 128, 129, 132, 133, 135, 136, 138, 139, 140, 141, 146, 150, 155, 156, 157, 158, 159, 161, 163, 164, 165, 166, 170, 171, 172, 173, 176, 177, 178, 183, 184, 185, 187, 188, 190, 191, 193, 194, 195, 196, 200, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 260, 261, 262, 263, 264, 270, 271, 272, 273, 274, 275, 276, 277, 279, 280, 281, 282, 283, 284, 285, 288, 289, 290, 291, 292, 293, 297, 299, 300, 301, 302, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 323, 324, 325, 326, 327, 328, 329, 332, 333, 334, 335, 336, 337, 340, 341, 346, 347, 348, 349, 353, 354, 355, 356, 367, 368, 369, 370, 374, 375, 376, 381, 383, 384, 385, 386, 387, 388, 389, 390, 392, 393, 394, 395, 401, 406, 407, 408, 409, 415, 418, 419, 420, 421, 422, 423, 424, 427, 428, 429, 430, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 475, 482, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 524, 525, 526, 527, 528, 529, 531, 532, 533, 534, 535, 536, 538, 539, 540, 541, 542, 543, 545, 546, 547, 548, 549, 550, 551, 552, 553, 555, 556, 557, 558, 559, 560, 563, 565, 566, 567, 568, 569, 572, 575, 576, 578, 579, 580, 581, 582, 583, 584, 586, 587, 588, 589, 591, 593, 594, 597, 598, 599, 600, 601, 602, 604, 605, 606, 607, 608, 612, 613, 614, 615, 616, 617, 623, 624, 625, 630, 631, 633, 634, 635, 636, 637, 638, 642, 643, 644, 645, 646, 647, 649, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 670, 671, 672, 673, 674, 675, 676, 677, 679, 680, 681, 682, 687, 688, 689, 690, 691, 692, 693, 694, 695, 698, 699, 702, 703, 704, 709, 710, 711, 712, 713, 714, 718, 719, 720, 721, 722, 723, 724, 725, 726, 729, 730, 731, 734, 742, 744, 745, 746, 747, 748, 751, 752, 753, 754, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 775, 776, 779, 780, 781, 782, 783, 784, 785, 786, 787, 789, 790, 791, 792, 796, 798, 799, 802, 803, 804, 805, 806, 807, 810, 811, 813, 816, 817, 821, 822, 826, 827, 828, 829, 830, 831, 832, 833, 834, 835, 837, 838, 839, 840, 841, 842, 843, 844, 845, 846, 847, 851, 852, 853, 854, 855, 856, 857, 859, 860, 867, 868, 869, 870, 871, 877, 878, 879, 880, 881, 882, 883, 884, 885, 891, 892, 893, 894, 896, 897, 898, 900, 901, 907, 908, 909, 910, 911, 912, 914, 915, 917, 918, 919, 920, 924, 925, 926, 927, 928, 934, 935, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 954, 955, 956, 957, 958, 960, 961, 962, 965, 966, 967, 968, 969, 972, 975, 979, 980, 983, 987, 990, 992, 993, 994, 997, 998, 999]
+        #BV_ID_memory_sparse (arr, ls)
         #genConfig (XORs, init_num, DIMENSIONS)
         write_memory(XORs, init_num, generated_sequence, NUM_LEVELS,DIMENSIONS, self.value.weight)
 
@@ -467,6 +504,7 @@ torch.save(encode, "MNISTmodels/enc_mnist.pt")
 #print("0 for 0 ", model.weight[0])
 
 ls = class_sparsity (model.weight)
+#BV_ID_memory_sparse (model.position,  ls)
 print(ls)
 print ("sparse model:", sparseconfig (DIMENSIONS, len(ls), IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
 print ("Normal model:  \npixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x \n", config (DIMENSIONS, IMG_SIZE*IMG_SIZE, NUM_LEVELS, len(model.weight)))
