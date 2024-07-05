@@ -24,7 +24,7 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-DIMENSIONS = 1000
+DIMENSIONS = 1100
 IMG_SIZE = 28
 NUM_LEVELS = 256
 c = int(math.floor(DIMENSIONS/NUM_LEVELS))
@@ -90,7 +90,7 @@ def st(hv):
         else:
             str = str + '0'
         #str = str + " "
-    print(str) 
+    #print(str) 
 def sparseconfig (DIMENSIONS, sparse, featureSize, NUM_LEVELS, classes):
     pixbit = math.ceil(math.log2(NUM_LEVELS))
     d = DIMENSIONS
@@ -169,7 +169,7 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d, value):
               strXors = strXors + '1'
         else:
               strXors = strXors + '0'
-    with open('mem/congigSigniture.mif', 'w') as output:
+    with open('mem/configSigniture.mif', 'w') as output:
         output.write(str(strXors[::-1]))
     weight_mem = []
     for ini in posision:
@@ -190,13 +190,7 @@ def write_memory(XORs, init_num, posision, NUM_LEVELS,d, value):
                 strinit2 = strinit2 + '1'
         value_mem.append(strinit2)
     #strinit = weight_mem[0]
-    with open('mem/ID_img.coe', 'w') as output:
-        output.write("memory_initialization_radix=2;\n")
-        output.write("memory_initialization_vector=\n")
-        for i in value_mem:
-            output.write(i)
-            output.write(",\n")
-    with open('mem/congigInitialvalues.mif', 'w') as output:
+    with open('mem/configInitialvalues.mif', 'w') as output:
         output.write(str(weight_mem[0]))
     with open('mem/BV_img.coe', 'w') as output:
         output.write("memory_initialization_radix=2;\n")
@@ -269,6 +263,7 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
         #print("     ",k ,"  : ",mystr)
         for m in range(number_of_confComp):
             #print(mem_size*(m+1)-1,mem_size*(m), mystr[mem_size*(m):mem_size*(m+1)])
+
             with open('../OTFGEN_VHDL/normalHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
@@ -312,6 +307,16 @@ def Sparsemodule(ls):
 def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
     for k in range(len(a)):
         mystr =""
+        indices_to_keep = [i not in ls for i in np.arange(0,DIMENSIONS)]
+        mystr = ["".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]]) for k in num_classes]
+        # for m in range(len(a[k])):
+        #     if m in ls:
+        #         pass
+        #     else:
+        #         if a[k][m] > 0 :
+        #             mystr =  mystr + "1" 
+        #         else:
+        #             mystr =  mystr + "0" 
         indices_to_keep = [i not in ls for i in np.arange(0,len(a[k]))]
         mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])  # for c in range(len(a))]
         # for m in range(len(a[k])):
@@ -434,11 +439,10 @@ class Encoder(nn.Module):
         self.value.weight = tArr.float()
 
         init_num = random.randint(1, 2**out_features)
-        init_num = 2419933186979998801411513927703589467436471084224051253766742445532056459147549689664862075177924315629830814105229880547109671522613043548530453455994928698277601012968608896202583987708306319344558233099188288034076514464182712412696066362116136461935100438713396078175938923044964978454656627175991
+        #init_num = 4005700534675144948017520162097884868995542063410121040524186571954440390130004122707793153004062360041636382462054526905859450700091502234942087738732084346636139513840569559345488256204180986892293042541798471825399139750542421374166982260754066786698152028283234760575400288349132987005389102090211
         XORs_num = random.randint(2**(out_features-1), 2**out_features)
-        XORs_num = 5711978676843633633986610354577114972861047731440312520380063436931516560309543819565411981191755875849728521717947413612852820619454690525260281143293731390535764528822712057458628361545252419560188709894199912696510104295269263332451564426252902863585833887145042897561471636666608118995519051363627
-        print(init_num)
-        print(XORs_num)
+        #XORs_num = 8304480432096973745855277495005820904147225062766752395232516640190584805313156405292672642268352808496341593728537662541323806162655398579460968638548439233518083677818779822153866372461399193020495636799816940385452684276171359521470779611083416341728702669855951160018696384825076986035152844977163        print(init_num)
+        #print(XORs_num)
         init = [eval(i) for i in [*bin(init_num)[2:]]]
         init.extend([0] * (out_features - len(init)))
         XORs = [i for i, x in enumerate(reversed([*bin(XORs_num)[2:]])) if x == '1']
