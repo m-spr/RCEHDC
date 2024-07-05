@@ -936,8 +936,8 @@
       <xilinx:xpmLibraries>
         <xilinx:xpmLibrary>XPM_MEMORY</xilinx:xpmLibrary>
       </xilinx:xpmLibraries>
-      <xilinx:coreRevision>9</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2024-07-01T14:05:04Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>10</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2024-07-02T07:57:25Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>

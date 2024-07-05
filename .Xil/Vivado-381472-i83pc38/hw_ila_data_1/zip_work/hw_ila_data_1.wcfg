@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="/localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_SPARS/DMA_SPARS.hw/hw_1/wave/hw_ila_data_1/hw_ila_data_1.wdb" id="1">
+         <top_modules>
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0"></ZoomStartTime>
+      <ZoomEndTime time="2,049"></ZoomEndTime>
+      <Cursor1Time time="0"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="602"></NameColumnWidth>
+      <ValueColumnWidth column_width="192"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="6" />
+   <wave_markers>
+   </wave_markers>
+   <wvobject type="array" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/BV">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/BV[999:900]</obj_property>
+      <obj_property name="ObjectShortName">BV[999:900]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/hv">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/hv[2:0]</obj_property>
+      <obj_property name="ObjectShortName">hv[2:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/countSimArr[0].comp/compArr[1].comp/class">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/countSimArr[0].comp/compArr[1].comp/class[127:0]</obj_property>
+      <obj_property name="ObjectShortName">class[127:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/countSimArr[0].comp/compArr[1].comp/hv">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/cls/CST/countSimArr[0].comp/compArr[1].comp/hv[0:0]</obj_property>
+      <obj_property name="ObjectShortName">hv[0:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/QHV">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/QHV[335:0]</obj_property>
+      <obj_property name="ObjectShortName">QHV[335:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="design_1_i/fulltopHDC_0/U0/HDCOTFGEn/doneEncoderToClassifier">
+      <obj_property name="DisplayName">FullPathName</obj_property>
+      <obj_property name="ElementShortName">design_1_i/fulltopHDC_0/U0/HDCOTFGEn/doneEncoderToClassifier</obj_property>
+      <obj_property name="ObjectShortName">doneEncoderToClassifier</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <obj_property name="LABELRADIX">true</obj_property>
+      <obj_property name="WaveformStyle">STYLE_DIGITAL</obj_property>
+   </wvobject>
+</wave_config>
