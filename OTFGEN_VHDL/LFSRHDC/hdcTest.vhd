@@ -58,8 +58,7 @@ COMPONENT popCount IS
 		);
 	END COMPONENT;
 component BasedVectorLFSR IS
-	GENERIC ( n	: INTEGER	:= 2000;			    -- number of bits
-			 );
+	GENERIC ( n	: INTEGER	:= 2000 ); -- number of bits
 	PORT (
 		clk, rst, update	: IN STD_LOGIC;
 		dout	: OUT  STD_LOGIC_VECTOR (n-1 DOWNTO 0 )

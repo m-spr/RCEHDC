@@ -273,14 +273,16 @@ def Sparsemodule(ls):
 def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
     for k in range(len(a)):
         mystr =""
-        for m in range(len(a[k])):
-            if m in ls:
-                pass
-            else:
-                if a[k][m] > 0 :
-                    mystr =  mystr + "1" 
-                else:
-                    mystr =  mystr + "0" 
+        indices_to_keep = [i not in ls for i in np.arange(0,DIMENSIONS)]
+        mystr = ["".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]]) for k in num_classes]
+        # for m in range(len(a[k])):
+        #     if m in ls:
+        #         pass
+        #     else:
+        #         if a[k][m] > 0 :
+        #             mystr =  mystr + "1" 
+        #         else:
+        #             mystr =  mystr + "0" 
         zeros = '0'*zeropadding
         mystr = zeros + mystr
         for m in range(number_of_confComp):
