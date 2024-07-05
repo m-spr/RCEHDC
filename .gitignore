@@ -8,9 +8,6 @@ MNISTmodels/
 test*
 *.coe
 *.mif
-connector.vhd
-*.mif
-*.coe
 *.xpr
 *.xml
 
