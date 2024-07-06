@@ -72,8 +72,83 @@ VIVADO_VERSION  = args.version
 
 if LFSR:
     import template
+    if SPARSE:
+        SOURCEFILES= HDC_DIR
+        +"/SparseHDC/BasedVectorLFSR.vhd "
+        +HDC_DIR+"/SparseHDC/classifier.vhd "
+        +HDC_DIR+"/SparseHDC/comparator.vhd "
+        +HDC_DIR+"/SparseHDC/connector.vhd "
+        +HDC_DIR+"/SparseHDC/comparatorTop.vhd "
+        +HDC_DIR+"/SparseHDC/confCompCtrl.vhd "
+        +HDC_DIR+"/SparseHDC/countingSim.vhd "
+        +HDC_DIR+"/SparseHDC/countingSimCtrl.vhd "
+        +HDC_DIR+"/SparseHDC/countingSimTop.vhd "
+        +HDC_DIR+"/SparseHDC/encoder.vhd "
+        +HDC_DIR+"/SparseHDC/fullconfComp.vhd "
+        +HDC_DIR+"/SparseHDC/fulltop.vhd "
+        +HDC_DIR+"/SparseHDC/hdcTest.vhd "
+        +HDC_DIR+"/SparseHDC/hvTOcompIn.vhd "
+        +HDC_DIR+"/SparseHDC/id_level.vhd "
+        +HDC_DIR+"/SparseHDC/popCount.vhd "
+        +HDC_DIR+"/SparseHDC/recMux.vhd "
+        +HDC_DIR+"/SparseHDC/reg.vhd "
+        +HDC_DIR+"/SparseHDC/regOne.vhd "
+        +HDC_DIR+"/SparseHDC/RSA.vhd "
+        +HDC_DIR+"/SparseHDC/SeqAdder.vhd "
+        +HDC_DIR+"/SparseHDC/SeqAdderCtrl.vhd "
+        +HDC_DIR+"/SparseHDC/XoringInputPop.vhd "
+        +HDC_DIR+"/SparseHDC/XoringPopCtrl.vhd"
+    else:
+        SOURCEFILES= HDC_DIR
+        +"/LFSRHDC/BasedVectorLFSR.vhd "
+        +HDC_DIR+"/LFSRHDC/classifier.vhd "
+        +HDC_DIR+"/LFSRHDC/comparator.vhd "
+        +HDC_DIR+"/LFSRHDC/comparatorTop.vhd "
+        +HDC_DIR+"/LFSRHDC/confCompCtrl.vhd "
+        +HDC_DIR+"/LFSRHDC/countingSim.vhd "
+        +HDC_DIR+"/LFSRHDC/countingSimCtrl.vhd "
+        +HDC_DIR+"/LFSRHDC/countingSimTop.vhd "
+        +HDC_DIR+"/LFSRHDC/encoder.vhd "
+        +HDC_DIR+"/LFSRHDC/fullconfComp.vhd "
+        +HDC_DIR+"/LFSRHDC/fulltop.vhd "
+        +HDC_DIR+"/LFSRHDC/hdcTest.vhd "
+        +HDC_DIR+"/LFSRHDC/hvTOcompIn.vhd "
+        +HDC_DIR+"/LFSRHDC/id_level.vhd "
+        +HDC_DIR+"/LFSRHDC/popCount.vhd "
+        +HDC_DIR+"/LFSRHDC/recMux.vhd "
+        +HDC_DIR+"/LFSRHDC/reg.vhd "
+        +HDC_DIR+"/LFSRHDC/regOne.vhd "
+        +HDC_DIR+"/LFSRHDC/RSA.vhd "
+        +HDC_DIR+"/LFSRHDC/SeqAdder.vhd "
+        +HDC_DIR+"/LFSRHDC/SeqAdderCtrl.vhd "
+        +HDC_DIR+"/LFSRHDC/XoringInputPop.vhd "
+        +HDC_DIR+"/LFSRHDC/XoringPopCtrl.vhd"
 else:
-    pass
+    SOURCEFILES= HDC_DIR
+    +"/normalHDC/BasedVectorLFSR.vhd "
+    +HDC_DIR+"/normalHDC/BV_mem.vhd "
+    +HDC_DIR+"/normalHDC/classifier.vhd "
+    +HDC_DIR+"/normalHDC/comparator.vhd "
+    +HDC_DIR+"/normalHDC/comparatorTop.vhd "
+    +HDC_DIR+"/normalHDC/confCompCtrl.vhd "
+    +HDC_DIR+"/normalHDC/countingSim.vhd "
+    +HDC_DIR+"/normalHDC/countingSimCtrl.vhd "
+    +HDC_DIR+"/normalHDC/countingSimTop.vhd "
+    +HDC_DIR+"/normalHDC/encoder.vhd "
+    +HDC_DIR+"/normalHDC/fullconfComp.vhd "
+    +HDC_DIR+"/normalHDC/fulltop.vhd "
+    +HDC_DIR+"/normalHDC/hdcTest.vhd "
+    +HDC_DIR+"/normalHDC/hvTOcompIn.vhd "
+    +HDC_DIR+"/normalHDC/id_level.vhd "
+    +HDC_DIR+"/normalHDC/popCount.vhd "
+    +HDC_DIR+"/normalHDC/recMux.vhd "
+    +HDC_DIR+"/normalHDC/reg.vhd "
+    +HDC_DIR+"/normalHDC/regOne.vhd "
+    +HDC_DIR+"/normalHDC/RSA.vhd "
+    +HDC_DIR+"/normalHDC/SeqAdder.vhd "
+    +HDC_DIR+"/normalHDC/SeqAdderCtrl.vhd "
+    +HDC_DIR+"/normalHDC/XoringInputPop.vhd "
+    +HDC_DIR+"/normalHDC/XoringPopCtrl.vhd"
 
 sys.path.insert(1, args.project_dir)
 os.makedirs(args.project_dir+"/mem", exist_ok=True)
@@ -128,7 +203,7 @@ for cmd in cmds:
 print("3. Create Vivado project")
 #Prepare log file
 log = open(args.project_dir+"create_project.log", "w")
-create_project = (template.create_project_tcl_template % (PROJECT_NAME, PROJECT_DIR, BOARD, CHVS, HDC_DIR, VIVADO_VERSION, FREQ_MHZ)).encode('utf-8')
+create_project = (template.create_project_tcl_template % (PROJECT_NAME, PROJECT_DIR, BOARD, CHVS, HDC_DIR, SOURCEFILES, VIVADO_VERSION, FREQ_MHZ)).encode('utf-8')
 process.stdin.write(create_project)
 process.stdin.flush()
 
@@ -199,7 +274,7 @@ read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/impl_1/runme.log"
 # write_log(log, "launch_impl completed successfully", "launch_impl failed")
 # log.close()
 
-time.sleep(5)
+time.sleep(10)
 print("8. Generate Bitstream")
 os.makedirs(args.project_dir+"release", exist_ok=True)
 # log = open(args.project_dir+"generate_bitstream.log", "w")

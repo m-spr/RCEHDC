@@ -4,7 +4,7 @@ set PROJECT_DIR %s
 set BOARD %s
 set CHVS "%s"
 set HDC_DIR %s
-set SOURCEFILES "$HDC_DIR/LFSRHDC/BasedVectorLFSR.vhd $HDC_DIR/LFSRHDC/classifier.vhd $HDC_DIR/LFSRHDC/comparator.vhd $HDC_DIR/LFSRHDC/comparatorTop.vhd $HDC_DIR/LFSRHDC/confCompCtrl.vhd $HDC_DIR/LFSRHDC/countingSim.vhd $HDC_DIR/LFSRHDC/countingSimCtrl.vhd $HDC_DIR/LFSRHDC/countingSimTop.vhd $HDC_DIR/LFSRHDC/encoder.vhd $HDC_DIR/LFSRHDC/fullconfComp.vhd $HDC_DIR/LFSRHDC/fulltop.vhd $HDC_DIR/LFSRHDC/hdcTest.vhd $HDC_DIR/LFSRHDC/hvTOcompIn.vhd $HDC_DIR/LFSRHDC/id_level.vhd $HDC_DIR/LFSRHDC/popCount.vhd $HDC_DIR/LFSRHDC/recMux.vhd $HDC_DIR/LFSRHDC/reg.vhd $HDC_DIR/LFSRHDC/regOne.vhd $HDC_DIR/LFSRHDC/RSA.vhd $HDC_DIR/LFSRHDC/SeqAdder.vhd $HDC_DIR/LFSRHDC/SeqAdderCtrl.vhd $HDC_DIR/LFSRHDC/XoringInputPop.vhd $HDC_DIR/LFSRHDC/XoringPopCtrl.vhd"
+set SOURCEFILES %s
 set VIVADO_VERSION %s
 set FREQ_MHZ %d
 
