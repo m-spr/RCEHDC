@@ -1,7 +1,5 @@
-.. _encoding:
-****
-E3HDC encoding
-****
+#E3HDC encoding
+
 
 Most \ac{HDC} encoding approaches rely on one of the following principles: random projection, base level encoding, or permutation.
 Here, we explain their basic ideas and their advantages and disadvantages, mainly in terms of memory usage and computational complexity.
