@@ -1,36 +1,51 @@
 ![logo](../figures/logo.jpg)
-****
-RCD_E3HDC
-****
 
-Welcome to the RCD_E3HDC documentation!
+Welcome to the RE3HDC documentation!
 =====================================
 
-RCD_E3HDC is a framework dedicated to mapping *Hyperdimensional Computing* also known as *Vector Symbolic Architectures* to FPGA.
+The reconfigurable Energy Efficient Encoding HDC (RE3HDC) is a framework dedicated to mapping *Hyperdimensional Computing* also known as *Vector Symbolic Architectures* to FPGA.
+The ROC-E3HDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RE3HDC are shown in the figure below and can be described as follows:
+![overview](../figures/overview.png)
+- **End-to-End Framework**
+  - Uses an open source HDC training library ([Torchhd[^1]](https://github.com/torchhd))
+  - Automatically generates a bitstream and hardware files for inferencing
 
-==============
-.. image:: img/RCD_E3HDC-stack.png
-   :scale: 15%
-   :align: center
-   
-The ROC-E3HDC project is an experimental framework for the implementation of HDC on PYNQ. The main components of $RPC-E^3HDC$ are shown in the figure above and can be described as follows:
-- An end-to-end framework from an open-source HDC training library (Torchhd)--link to TorchHD? down to generating bitstream on hardware.
-- Supports a special parameter generating on the fly to make small FPGAs suitable for different tasks.
--architectures customized for each network.
+- **On-the-Fly Parameter Generation**
+  - Generate memory parameters on-the-fly with a low overhead hardware
+  - Makes small FPGAs suitable for various tasks
 
-- The ROC-E3HDC compiler which maps trained binary-HDC from TorchHD to PYNQ-Z2 FPGA automatically.  
-- An adjustable pipeline architecture based on the problem size suitable for various FPGA edge devices and platforms.
-- A fully reconfigurable and parameterized hardware in VHDL that can be matched to any problem and size only by setting the parameters and initial values.
---pruning-non done yet- An automatic optimization on the HDC model for efficient hardware mapping by eliminating the ineffective elements without sacrificing accuracy.
- 
-More RCD_E3HDC Resources
+- **Adjustable Pipeline and Fully Reconfigurable Hardware Architecture**
+  - Parameterized hardware in VHDL
+  - Scales based on problem size
+  - Suitable for various problems without changing hardware discription by setting generic parameters and initial values
+  
+- **Automatic Optimization**
+  - Optimizes HDC model for efficient hardware mapping by generating memory parameters on-the-fly 
+  - Eliminates ineffective elements without sacrificing accuracy
+
+[^1]: [Torchhd](https://github.com/torchhd)
+
+RE3HDC tutorials Resources
 ===================
+- [getting_started with RE3HDC](?)
+- The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
+-  [E3HDC encoding]
+-  [E3HDC paramiter generating?]
+-  [RE3HDC pipelining]
+-  [hardware discription]
+-  [end_to_end_flow]
+-  [source_code/RE3HDC]
 
-* `The RCD_E3HDC examples repository <https://github.com/RCD_E3HDC-examples>`_
 
-* `List of publications <https://xilinx.github.io/RCD_E3HDC/publications>`_
+
+
+
+* `List of [publications](https://xilinx.github.io/RCD_E3HDC/publications)
  
- 
+Publications
+=====================
+
+
 .. toctree::
    :glob:
    :maxdepth: 3
