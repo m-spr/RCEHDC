@@ -5,7 +5,10 @@ Welcome to the RE3HDC documentation!
 
 The reconfigurable Energy Efficient Encoding HDC (RE3HDC) is a framework dedicated to mapping *Hyperdimensional Computing* also known as *Vector Symbolic Architectures* to FPGA.
 The ROC-E3HDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RE3HDC are shown in the figure below and can be described as follows:
+
 ![overview](../figures/overview.png)
+
+
 - **End-to-End Framework**
   - Uses an open source HDC training library ([Torchhd[^1]](https://github.com/torchhd))
   - Automatically generates a bitstream and hardware files for inferencing
