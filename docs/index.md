@@ -38,19 +38,3 @@ RE3HDC tutorials Resources
 
 * `List of [publications](https://xilinx.github.io/RCD_E3HDC/publications)
  
-Publications
-=====================
-
-
-.. toctree::
-   :glob:
-   :maxdepth: 3
-   :caption: Tutorials
-
-   getting_started with RCD_E3HDC
-   tutorials
-   E3HDC encoding
-   E3HDC paramiter generating
-   hardware discription
-   end_to_end_flow
-   source_code/RCD_E3HDC
