@@ -1,8 +1,23 @@
-import sympy as sp
-from sympy import Eq, Symbol, solve, N
 import math
+import torch
 
-def memMinimizer (d, f):
+def class_sparsity(path):
+    a = torch.load(path+"/model/chvs.pt")
+    count = 0
+    ls = []
+    for j in range(len(a[0])):
+        m = a[0][j]
+        n = 0
+        for i in range(len(a)):
+            if m != a[i][j]:
+                n = 1
+        if n == 0:
+            count = count + 1
+            ls.append(j)
+    print("Dimension size after pruning: ",len(a[0])-count)
+    return(ls)
+
+def memMinimizer(d, f):
     n = 2
     k = []
     zeros = []
@@ -19,26 +34,26 @@ def memMinimizer (d, f):
     return memSize[memOverhead.index(min(memOverhead))], k[memOverhead.index(min(memOverhead))]
 
 
-def sparseconfig (DIMENSIONS, sparse, featureSize, NUM_LEVELS, classes):
-    r = int (DIMENSIONS%NUM_LEVELS)
-    pixbit = math.ceil(math.log2(NUM_LEVELS))
-    d = DIMENSIONS
-    lgf  = math.ceil(math.log2(featureSize))
-    c   = classes
-    f = featureSize
-    n , adI = memMinimizer (DIMENSIONS - sparse, featureSize)
-    adz = 2**(math.ceil(math.log2(adI)))-adI
-    zComp =  2**(math.ceil(math.log2(classes)))-classes
-    lgCn =  math.ceil(math.log2(classes))
-    logn = math.ceil(math.log2(adI))
-    x = math.ceil(DIMENSIONS/NUM_LEVELS)
+def sparseconfig(DIMENSIONS, featureSize, sparse, NUM_LEVELS, classes):
+    r       = int (DIMENSIONS%NUM_LEVELS)
+    pixbit  = math.ceil(math.log2(NUM_LEVELS))
+    lgf     = math.ceil(math.log2(featureSize))
+    c       = classes
+    f       = featureSize
+    n , adI = memMinimizer(DIMENSIONS - sparse, featureSize)
+    adz     = 2**(math.ceil(math.log2(adI)))-adI
+    zComp   = 2**(math.ceil(math.log2(classes)))-classes
+    lgCn    = math.ceil(math.log2(classes))
+    logn    = math.ceil(math.log2(adI))
+    x       = math.ceil(DIMENSIONS/NUM_LEVELS)
+
     if DIMENSIONS < x*NUM_LEVELS:
         x = x-1
     
     config = {
         "in_width"      : pixbit,
-        "dim_size"      : d,
-        "sparsity"      : sparse,
+        "dim_size"      : DIMENSIONS,
+        "sparsity"      : DIMENSIONS-sparse,
         "lgf"           : lgf,
         "num_classes"   : c,
         "feature_size"  : f,
@@ -54,24 +69,25 @@ def sparseconfig (DIMENSIONS, sparse, featureSize, NUM_LEVELS, classes):
     return config
 
   
-def config (DIMENSIONS, featureSize, NUM_LEVELS, classes):
-    r = int (DIMENSIONS%NUM_LEVELS)
-    pixbit = math.ceil(math.log2(NUM_LEVELS))
-    d = DIMENSIONS
-    lgf  = math.ceil(math.log2(featureSize))
-    c   = classes
-    f = featureSize
-    n , adI = memMinimizer (DIMENSIONS, featureSize)
-    adz = 2**(math.ceil(math.log2(adI)))-adI
-    zComp =  2**(math.ceil(math.log2(classes)))-classes
-    lgCn =  math.ceil(math.log2(classes))
-    logn = math.ceil(math.log2(adI))
-    x = math.ceil(DIMENSIONS/NUM_LEVELS)
+def config(DIMENSIONS, featureSize, NUM_LEVELS, classes):
+    r       = int (DIMENSIONS%NUM_LEVELS)
+    pixbit  = math.ceil(math.log2(NUM_LEVELS))
+    lgf     = math.ceil(math.log2(featureSize))
+    c       = classes
+    f       = featureSize
+    n , adI = memMinimizer(DIMENSIONS, featureSize)
+    adz     = 2**(math.ceil(math.log2(adI)))-adI
+    zComp   = 2**(math.ceil(math.log2(classes)))-classes
+    lgCn    = math.ceil(math.log2(classes))
+    logn    = math.ceil(math.log2(adI))
+    x       = math.ceil(DIMENSIONS/NUM_LEVELS)
+
     if DIMENSIONS < x*NUM_LEVELS:
         x = x-1
     config = {
         "in_width"      : pixbit,
-        "dim_size"      : d,
+        "dim_size"      : DIMENSIONS,
+        "sparsity"      : 0,
         "lgf"           : lgf,
         "num_classes"   : c,
         "feature_size"  : f,
@@ -85,6 +101,3 @@ def config (DIMENSIONS, featureSize, NUM_LEVELS, classes):
         "x"             : x
     }
     return config
-
-#pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x = config (1000, 28*28, 1000, 9)
-#print(pixbit, d, lgf, c, f, n, adI, adz, zComp, lgCn, logn, x)

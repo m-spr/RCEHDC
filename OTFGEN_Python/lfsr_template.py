@@ -4,7 +4,8 @@ set PROJECT_DIR %s
 set BOARD %s
 set CHVS "%s"
 set HDC_DIR %s
-set SOURCEFILES %s
+set SOURCEFILES "%s"
+set ENCODING %s
 set VIVADO_VERSION %s
 set FREQ_MHZ %d
 
@@ -82,8 +83,8 @@ set NEW_CONSTANT_VALUE_2 {"%s"}
 # Set the reference directory for source file relative paths 
 # set origin_dir [file dirname [file normalize [info script]]]
 # Open the file to be modified (FILE1) and the temporary file (FILE2).
-set FILE1 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR.vhd r]
-set FILE2 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR_temp.vhd w]
+set FILE1 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd r]
+set FILE2 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR_temp.vhd w]
 
 while { [ gets $FILE1 LINE ] >= 0 } {
     # Search for the constant declarations
@@ -105,7 +106,7 @@ while { [ gets $FILE1 LINE ] >= 0 } {
 close $FILE1
 close $FILE2
 # Rename temporary file
-file rename -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR_temp.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR.vhd
+file rename -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR_temp.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd
 
 
 #repackage IP 
@@ -124,6 +125,7 @@ puts DONE
 
 
 create_block_design="""
+set SPARSITY %d
 
 #make diagram 
 create_bd_design "design_1"
@@ -229,7 +231,9 @@ startgroup
 set_property -dict [list CONFIG.pixbit {%d} CONFIG.d {%d} CONFIG.lgf {%d} CONFIG.c {%d} CONFIG.featureSize {%d} CONFIG.n {%d} CONFIG.adI {%d} CONFIG.adz {%d} CONFIG.zComp {%d} CONFIG.lgCn {%d} CONFIG.logn {%d} CONFIG.r {%d} CONFIG.x {%d}] [get_bd_cells fulltopHDC_0]
 endgroup
 
-
+if { $SPARSITY > 0 } {
+  set_property -dict [list CONFIG.sparse [expr int($SPARSITY)]] [get_bd_cells fulltopHDC_0]
+}
 
 regenerate_bd_layout
 validate_bd_design
@@ -275,36 +279,36 @@ puts DONE
 # DONE
 export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/bd/design_1/design_1.bd] -directory $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/sim_scripts -ip_user_files_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files -ipstatic_source_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/ipstatic -lib_map_path [list {modelsim=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/modelsim} {questa=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/questa} {xcelium=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/xcelium} {vcs=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/vcs} {riviera=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
 report_ip_status -name ip_status 
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/fulltop.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/fulltop.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/hdcTest.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/classifier.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/id_level.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/popCount.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/encoder.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/hvTOcompIn.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/hdcTest.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/classifier.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/id_level.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/popCount.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/BasedVectorLFSR.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/encoder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/hvTOcompIn.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSimTop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/comparatorTop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/XoringInputPop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/XoringPopCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/regOne.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSimTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/comparatorTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/XoringInputPop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/XoringPopCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/regOne.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/comparator.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/reg.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSim.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/SeqAdderCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/confCompCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSimCtrl.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/comparator.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/reg.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSim.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/SeqAdderCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/confCompCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/countingSimCtrl.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/fullconfComp.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/fullconfComp.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/RSA.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/RSA.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/SeqAdder.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/recMux.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/SeqAdder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/LFSRHDC/recMux.vhd}
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fulltop.vhd] -no_script -reset -force -quiet
+remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fulltop.vhd
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hdcTest.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/classifier.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/id_level.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/popCount.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/encoder.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hvTOcompIn.vhd] -no_script -reset -force -quiet
+remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hdcTest.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/classifier.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/id_level.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/popCount.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/encoder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hvTOcompIn.vhd}
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimTop.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparatorTop.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringInputPop.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringPopCtrl.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/regOne.vhd] -no_script -reset -force -quiet
+remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparatorTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringInputPop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringPopCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/regOne.vhd}
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparator.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/reg.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSim.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdderCtrl.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/confCompCtrl.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimCtrl.vhd] -no_script -reset -force -quiet
+remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparator.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/reg.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSim.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdderCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/confCompCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimCtrl.vhd}
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fullconfComp.vhd] -no_script -reset -force -quiet
+remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fullconfComp.vhd
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/RSA.vhd] -no_script -reset -force -quiet
+remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/RSA.vhd
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdder.vhd] -no_script -reset -force -quiet
+export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/recMux.vhd] -no_script -reset -force -quiet
+remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/recMux.vhd}
 
 
 

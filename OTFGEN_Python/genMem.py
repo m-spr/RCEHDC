@@ -1,20 +1,6 @@
 import torch
 import numpy as np
-
-def class_sparsity (a):     # a is model.weight
-    count = 0
-    ls = []
-    for j in range(len(a[1])):
-        m = a[0][j]
-        n = 0
-        for i in range(len(a)):
-            if m != a[i][j]:
-                n = 1
-        if n == 0:
-            count = count + 1
-            ls.append(j)
-    print("Number of pruning: ",count)
-    return(ls)
+import os
 
 def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
     a = torch.load(path+"/model/chvs.pt")
@@ -31,31 +17,24 @@ def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
         mystr = zeros + mystr
         
         for m in range(number_of_confComp):
-            with open(path+'mem/normal/full{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+            with open(path+'mem/normal/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
-def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
+def class_normalize_memory_sparse (ls, mem_size, number_of_confComp, zeropadding, path):
+    a = torch.load(path+"/model/chvs.pt")
     for k in range(len(a)):
         mystr =""
         indices_to_keep = [i not in ls for i in np.arange(0,len(a[k]))]
-        mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])# for c in range(len(a))]
-        # for m in range(len(a[k])):
-        #     if m in ls:
-        #         pass
-        #     else:
-        #         if a[k][m] > 0 :
-        #             mystr =  mystr + "1" 
-        #         else:
-        #             mystr =  mystr + "0" 
+        mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])
+        
         zeros = '0'*zeropadding
         mystr = zeros + mystr
         for m in range(number_of_confComp):
-            with open('../OTFGEN_VHDL/SparseHDC/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
+            with open(path+'mem/sparse/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
 def write_memory(path, DIMENSIONS):
     XORs     = torch.load(path+"model/xors.pt")
-    #init_num = torch.load(path+"/model/init_num.pt")
     position = torch.load(path+"model/sequence.pt")
 
     strXors = ""
@@ -91,3 +70,16 @@ def write_memory(path, DIMENSIONS):
             output.write(i)
             #output.write('"')
             output.write(",\n")
+
+def gen_sparsemodule(path, ls, DIMENSIONS):
+    os.system('touch '+path+'/connector.vhd')
+    f = open(path+'/connector.vhd', "w")
+    f.write("LIBRARY IEEE; \nUSE IEEE.STD_LOGIC_1164.ALL; \nUSE IEEE.NUMERIC_STD.ALL; \n  \nENTITY connector IS \n\tGENERIC(d : INTEGER := 1000; ----dimentionsize \n\tp: INTEGER:= 1000 ); --- prunsize \n\tPORT ( \n\t\tinput         : IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0); \n\t\tpruneoutput        : OUT  STD_LOGIC_VECTOR (p-1 DOWNTO 0)      \n\t);\nEND ENTITY connector;\n\nARCHITECTURE behavioral OF connector  IS\nBEGIN\n")
+    counter = 0 
+    for i in range(DIMENSIONS):
+        if i not in ls:
+            f.write("\t pruneoutput("+str(DIMENSIONS- len(ls) - counter-1)+") <= input("+str(DIMENSIONS-i-1)+");\n")
+            counter = counter + 1
+    f.write('\nEND ARCHITECTURE behavioral;')
+    f.close()
+    return (len(ls))
