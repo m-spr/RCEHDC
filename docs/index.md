@@ -1,4 +1,4 @@
-![logo](../figures/logo.jng)
+![logo](../figures/logo.jpg)
 ****
 RCD_E3HDC
 ****
