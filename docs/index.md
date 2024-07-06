@@ -10,10 +10,6 @@ The ROC-E3HDC project is an experimental framework for the implementation of HDC
   - Uses an open source HDC training library ([Torchhd[^1]](https://github.com/torchhd))
   - Automatically generates a bitstream and hardware files for inferencing
 
-- **On-the-Fly Parameter Generation**
-  - Generate memory parameters on-the-fly with a low overhead hardware
-  - Makes small FPGAs suitable for various tasks
-
 - **Adjustable Pipeline and Fully Reconfigurable Hardware Architecture**
   - Parameterized hardware in VHDL
   - Scales based on problem size
