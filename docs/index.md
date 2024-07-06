@@ -1,6 +1,6 @@
 ![logo](../figures/logo.jpg)
 
-Welcome to the RE3HDC documentation!
+#Welcome to the RE3HDC documentation!
 =====================================
 
 The reconfigurable Energy Efficient Encoding HDC (RE3HDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
@@ -24,7 +24,7 @@ The ROC-E3HDC project is an experimental framework for the implementation of HDC
 
 [^1]: [Torchhd](https://github.com/torchhd)
 
-RE3HDC tutorials Resources
+#RE3HDC tutorials Resources
 ===================
 - [getting_started with RE3HDC](?)
 - The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
