@@ -1,7 +1,13 @@
-#E3HDC encoding
+HDC Background
+====================
 
+HDC can be divided into two main components: Enoding and Classification. In the first part, the input is transferred into a hyperdimensional space, which is called Query HyperVector (QHV). During classification, the most similar class to QHV is then selected as the classification candidate.
 
-Most \ac{HDC} encoding approaches rely on one of the following principles: random projection, base level encoding, or permutation.
+[HDC overview](../figur/HDC_main.jpg)
+
+HDC encoding
+====================
+Most HDC encoding approaches rely on one of the following principles: random projection, base level encoding, or permutation.
 Here, we explain their basic ideas and their advantages and disadvantages, mainly in terms of memory usage and computational complexity.
 The common operations for all approaches are \textit{binding}, where each of the input's $f$ features is transformed into an HV, and \textit{bundling}, where the $f$ generated HVs are summed up and binarized.
 
