@@ -28,9 +28,9 @@ RE3HDC tutorials Resources
 ===================
 - [getting_started with RE3HDC](?)
 - The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
--  [E3HDC encoding](https://github.com/RE3HDC/docs/_encoding.md)
+-  [E3HDC encoding](./_encoding.md)
 -  [E3HDC paramiter generating?]
--  [RE3HDC pipelining]
+-  [RE3HDC architetcure and pipelining](./hardware_over.md)
 -  [hardware discription]
 -  [end_to_end_flow]
 -  [source_code/RE3HDC]
