@@ -11,6 +11,7 @@ import genConfig
 import genMem
 from glob import glob
 import time
+import shutil
 
 parser = argparse.ArgumentParser(description="Make Vivado project")
 parser.add_argument("vivado_path", type=str, nargs='?', default="", help="Path to Vivado")
@@ -33,11 +34,11 @@ def write_log(log, success, fail):
 
 def read_log(file_path, success, fail, run):
     #wait until file exists
-    print("-Waiting for pre-"+run+" steps to finish")
+    print("-Waiting for "+run+" to start")
     while not os.path.exists(file_path):
         time.sleep(1)
     #read until success
-    print("-Pre-"+run+" steps complete. Running "+ run)
+    print("-Running "+ run)
     time.sleep(1)
     if os.path.isfile(file_path):
         with open(file_path, 'r') as f:
@@ -69,7 +70,7 @@ NUM_LEVELS      = config["NUM_LEVELS"]
 NUM_CLASSES     = config["NUM_CLASSES"]
 SPARSE          = config["SPARSE"]
 FREQ_MHZ        = config["FREQUENCY"]
-HDC_DIR         = args.pwd+"/OTFGEN_VHDL"
+HDC_DIR         = args.pwd+"/VHDL"
 VIVADO_VERSION  = args.version
 
 sys.path.insert(1, args.project_dir)
@@ -116,7 +117,7 @@ else:
     #get all paths to the CHV memory files seperated by one empty space
     CHVS = ' '.join(glob(args.project_dir+"mem/normal/*.mif"))
 
-genMem.write_memory(args.project_dir, DIMENSIONS)
+genMem.write_memory(args.project_dir, DIMENSIONS, NUM_LEVELS)
 
 with open(PROJECT_DIR+"hdc_config.json", "w") as f:
     config = json.dump(hdc_config, f)
@@ -124,87 +125,88 @@ with open(PROJECT_DIR+"hdc_config.json", "w") as f:
 
 if LFSR:
     import lfsr_template as template
+    shutil.copy(args.project_dir+"/connector.vhd", HDC_DIR+"/lfsr_sparse/connector.vhd")
     if SPARSE:
-        ENCODING = "SparseHDC"
-        SOURCEFILES= (HDC_DIR
-        +"/SparseHDC/BasedVectorLFSR.vhd "
-        +HDC_DIR+"/SparseHDC/classifier.vhd "
-        +HDC_DIR+"/SparseHDC/comparator.vhd "
-        +args.project_dir+"connector.vhd "
-        +HDC_DIR+"/SparseHDC/comparatorTop.vhd "
-        +HDC_DIR+"/SparseHDC/confCompCtrl.vhd "
-        +HDC_DIR+"/SparseHDC/countingSim.vhd "
-        +HDC_DIR+"/SparseHDC/countingSimCtrl.vhd "
-        +HDC_DIR+"/SparseHDC/countingSimTop.vhd "
-        +HDC_DIR+"/SparseHDC/encoder.vhd "
-        +HDC_DIR+"/SparseHDC/confComp.vhd "
-        +HDC_DIR+"/SparseHDC/fulltop.vhd "
-        +HDC_DIR+"/SparseHDC/hdcTest.vhd "
-        +HDC_DIR+"/SparseHDC/hvTOcompIn.vhd "
-        +HDC_DIR+"/SparseHDC/id_level.vhd "
-        +HDC_DIR+"/SparseHDC/popCount.vhd "
-        +HDC_DIR+"/SparseHDC/recMux.vhd "
-        +HDC_DIR+"/SparseHDC/reg.vhd "
-        +HDC_DIR+"/SparseHDC/regOne.vhd "
-        +HDC_DIR+"/SparseHDC/RSA.vhd "
-        +HDC_DIR+"/SparseHDC/SeqAdder.vhd "
-        +HDC_DIR+"/SparseHDC/SeqAdderCtrl.vhd "
-        +HDC_DIR+"/SparseHDC/XoringInputPop.vhd "
-        +HDC_DIR+"/SparseHDC/XoringPopCtrl.vhd")
+        ENCODING = "lfsr_sparse"
+        SOURCEFILES= (
+        HDC_DIR+"/lfsr_sparse/BasedVectorLFSR.vhd "
+        +HDC_DIR+"/lfsr_sparse/classifier.vhd "
+        +HDC_DIR+"/lfsr_sparse/comparator.vhd "
+        +HDC_DIR+"/lfsr_sparse/comparatorTop.vhd "
+        +HDC_DIR+"/lfsr_sparse/confCompCtrl.vhd "
+        +HDC_DIR+"/lfsr_sparse/countingSim.vhd "
+        +HDC_DIR+"/lfsr_sparse/countingSimCtrl.vhd "
+        +HDC_DIR+"/lfsr_sparse/countingSimTop.vhd "
+        +HDC_DIR+"/lfsr_sparse/encoder.vhd "
+        +HDC_DIR+"/lfsr_sparse/confComp.vhd "
+        +HDC_DIR+"/lfsr_sparse/fulltop.vhd "
+        +HDC_DIR+"/lfsr_sparse/hdcTest.vhd "
+        +HDC_DIR+"/lfsr_sparse/hvTOcompIn.vhd "
+        +HDC_DIR+"/lfsr_sparse/id_level.vhd "
+        +HDC_DIR+"/lfsr_sparse/popCount.vhd "
+        +HDC_DIR+"/lfsr_sparse/recMux.vhd "
+        +HDC_DIR+"/lfsr_sparse/reg.vhd "
+        +HDC_DIR+"/lfsr_sparse/regOne.vhd "
+        +HDC_DIR+"/lfsr_sparse/RSA.vhd "
+        +HDC_DIR+"/lfsr_sparse/SeqAdder.vhd "
+        +HDC_DIR+"/lfsr_sparse/SeqAdderCtrl.vhd "
+        +HDC_DIR+"/lfsr_sparse/XoringInputPop.vhd "
+        +HDC_DIR+"/lfsr_sparse/XoringPopCtrl.vhd "
+        +HDC_DIR+"/lfsr_sparse/connector.vhd")
     else:
-        ENCODING = "LFSRHDC"
+        ENCODING = "lfsr"
         SOURCEFILES= (HDC_DIR
-        +"/LFSRHDC/BasedVectorLFSR.vhd "
-        +HDC_DIR+"/LFSRHDC/classifier.vhd "
-        +HDC_DIR+"/LFSRHDC/comparator.vhd "
-        +HDC_DIR+"/LFSRHDC/comparatorTop.vhd "
-        +HDC_DIR+"/LFSRHDC/confCompCtrl.vhd "
-        +HDC_DIR+"/LFSRHDC/countingSim.vhd "
-        +HDC_DIR+"/LFSRHDC/countingSimCtrl.vhd "
-        +HDC_DIR+"/LFSRHDC/countingSimTop.vhd "
-        +HDC_DIR+"/LFSRHDC/encoder.vhd "
-        +HDC_DIR+"/LFSRHDC/fullconfComp.vhd "
-        +HDC_DIR+"/LFSRHDC/fulltop.vhd "
-        +HDC_DIR+"/LFSRHDC/hdcTest.vhd "
-        +HDC_DIR+"/LFSRHDC/hvTOcompIn.vhd "
-        +HDC_DIR+"/LFSRHDC/id_level.vhd "
-        +HDC_DIR+"/LFSRHDC/popCount.vhd "
-        +HDC_DIR+"/LFSRHDC/recMux.vhd "
-        +HDC_DIR+"/LFSRHDC/reg.vhd "
-        +HDC_DIR+"/LFSRHDC/regOne.vhd "
-        +HDC_DIR+"/LFSRHDC/RSA.vhd "
-        +HDC_DIR+"/LFSRHDC/SeqAdder.vhd "
-        +HDC_DIR+"/LFSRHDC/SeqAdderCtrl.vhd "
-        +HDC_DIR+"/LFSRHDC/XoringInputPop.vhd "
-        +HDC_DIR+"/LFSRHDC/XoringPopCtrl.vhd")
+        +"/lfsr/BasedVectorLFSR.vhd "
+        +HDC_DIR+"/lfsr/classifier.vhd "
+        +HDC_DIR+"/lfsr/comparator.vhd "
+        +HDC_DIR+"/lfsr/comparatorTop.vhd "
+        +HDC_DIR+"/lfsr/confCompCtrl.vhd "
+        +HDC_DIR+"/lfsr/countingSim.vhd "
+        +HDC_DIR+"/lfsr/countingSimCtrl.vhd "
+        +HDC_DIR+"/lfsr/countingSimTop.vhd "
+        +HDC_DIR+"/lfsr/encoder.vhd "
+        +HDC_DIR+"/lfsr/fullconfComp.vhd "
+        +HDC_DIR+"/lfsr/fulltop.vhd "
+        +HDC_DIR+"/lfsr/hdcTest.vhd "
+        +HDC_DIR+"/lfsr/hvTOcompIn.vhd "
+        +HDC_DIR+"/lfsr/id_level.vhd "
+        +HDC_DIR+"/lfsr/popCount.vhd "
+        +HDC_DIR+"/lfsr/recMux.vhd "
+        +HDC_DIR+"/lfsr/reg.vhd "
+        +HDC_DIR+"/lfsr/regOne.vhd "
+        +HDC_DIR+"/lfsr/RSA.vhd "
+        +HDC_DIR+"/lfsr/SeqAdder.vhd "
+        +HDC_DIR+"/lfsr/SeqAdderCtrl.vhd "
+        +HDC_DIR+"/lfsr/XoringInputPop.vhd "
+        +HDC_DIR+"/lfsr/XoringPopCtrl.vhd")
 else:
     import bv_template as template
-    ENCODING = "normalHDC"
+    ENCODING = "base_level"
     SOURCEFILES= (HDC_DIR
-    +"/normalHDC/BasedVectorLFSR.vhd "
-    +HDC_DIR+"/normalHDC/BV_mem.vhd "
-    +HDC_DIR+"/normalHDC/classifier.vhd "
-    +HDC_DIR+"/normalHDC/comparator.vhd "
-    +HDC_DIR+"/normalHDC/comparatorTop.vhd "
-    +HDC_DIR+"/normalHDC/confCompCtrl.vhd "
-    +HDC_DIR+"/normalHDC/countingSim.vhd "
-    +HDC_DIR+"/normalHDC/countingSimCtrl.vhd "
-    +HDC_DIR+"/normalHDC/countingSimTop.vhd "
-    +HDC_DIR+"/normalHDC/encoder.vhd "
-    +HDC_DIR+"/normalHDC/fullconfComp.vhd "
-    +HDC_DIR+"/normalHDC/fulltop.vhd "
-    +HDC_DIR+"/normalHDC/hdcTest.vhd "
-    +HDC_DIR+"/normalHDC/hvTOcompIn.vhd "
-    +HDC_DIR+"/normalHDC/id_level.vhd "
-    +HDC_DIR+"/normalHDC/popCount.vhd "
-    +HDC_DIR+"/normalHDC/recMux.vhd "
-    +HDC_DIR+"/normalHDC/reg.vhd "
-    +HDC_DIR+"/normalHDC/regOne.vhd "
-    +HDC_DIR+"/normalHDC/RSA.vhd "
-    +HDC_DIR+"/normalHDC/SeqAdder.vhd "
-    +HDC_DIR+"/normalHDC/SeqAdderCtrl.vhd "
-    +HDC_DIR+"/normalHDC/XoringInputPop.vhd "
-    +HDC_DIR+"/normalHDC/XoringPopCtrl.vhd")
+    +"/base_level/BasedVectorLFSR.vhd "
+    +HDC_DIR+"/base_level/BV_mem.vhd "
+    +HDC_DIR+"/base_level/classifier.vhd "
+    +HDC_DIR+"/base_level/comparator.vhd "
+    +HDC_DIR+"/base_level/comparatorTop.vhd "
+    +HDC_DIR+"/base_level/confCompCtrl.vhd "
+    +HDC_DIR+"/base_level/countingSim.vhd "
+    +HDC_DIR+"/base_level/countingSimCtrl.vhd "
+    +HDC_DIR+"/base_level/countingSimTop.vhd "
+    +HDC_DIR+"/base_level/encoder.vhd "
+    +HDC_DIR+"/base_level/fullconfComp.vhd "
+    +HDC_DIR+"/base_level/fulltop.vhd "
+    +HDC_DIR+"/base_level/hdcTest.vhd "
+    +HDC_DIR+"/base_level/hvTOcompIn.vhd "
+    +HDC_DIR+"/base_level/id_level.vhd "
+    +HDC_DIR+"/base_level/popCount.vhd "
+    +HDC_DIR+"/base_level/recMux.vhd "
+    +HDC_DIR+"/base_level/reg.vhd "
+    +HDC_DIR+"/base_level/regOne.vhd "
+    +HDC_DIR+"/base_level/RSA.vhd "
+    +HDC_DIR+"/base_level/SeqAdder.vhd "
+    +HDC_DIR+"/base_level/SeqAdderCtrl.vhd "
+    +HDC_DIR+"/base_level/XoringInputPop.vhd "
+    +HDC_DIR+"/base_level/XoringPopCtrl.vhd")
 
 
 print("2. Starting Vivado in TCL Mode")
@@ -242,13 +244,30 @@ with open(args.project_dir+'mem/configSignature.txt', 'r') as f:
     signature = f.readline()
 with open(args.project_dir+'mem/configInitialvalues.txt', 'r') as f:
     init = f.readline()
-create_ip = (template.create_ip_tcl_template % (signature, init)).encode('utf-8')
-process.stdin.write(create_ip)
-process.stdin.flush()
+if LFSR:
+    create_ip = (template.create_ip_tcl_template % (signature, init)).encode('utf-8')
+    process.stdin.write(create_ip)
+    process.stdin.flush()
+    write_log(log, "DONE", "failed")
+    log.close()
+else:
+    create_ip = (template.create_ip_tcl_template % (FEATURES, DIMENSIONS, NUM_LEVELS)).encode('utf-8')
+    process.stdin.write(create_ip)
+    process.stdin.flush()
+    write_log(log, "DONE", "failed")
+    log.close()
 
-write_log(log, "DONE", "failed")
-log.close()
-
+    create_ip = (template.insert_block_mem).encode('utf-8')
+    process.stdin.write(create_ip)
+    process.stdin.flush()
+    read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/blk_mem_gen_ID_synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "block memory generation")
+    
+    log = open(args.project_dir+"repackage_ip.log", "w")
+    repackage_ip = (template.repackage_ip).encode('utf-8')
+    process.stdin.write(repackage_ip)
+    process.stdin.flush()
+    write_log(log, "DONE", "failed")
+    log.close()
 
 #We need to manually adjust the constant initialization values for LFSR
 

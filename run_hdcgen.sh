@@ -28,4 +28,4 @@ fi
 
 
 
-python OTFGEN_Python/make_proj.py $VIVADO_PATH/$VIVADO_VERSION --version $VIVADO_VERSION --pwd $PWD --project_dir "$PROJECT_DIR"
+python python/make_proj.py $VIVADO_PATH/$VIVADO_VERSION --version $VIVADO_VERSION --pwd $PWD --project_dir "$PROJECT_DIR"
