@@ -29,14 +29,17 @@ RE3HDC tutorials Resources
 - [getting_started with RE3HDC](?)
 - The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
 -  [E3HDC encoding](./_encoding.md)
--  [E3HDC paramiter generating?]
 -  [RE3HDC architetcure and pipelining](./hardware_over.md)
+-  [E3HDC hardware structure and paramiter generating](./hardware_param.md)
 -  [hardware discription]
 -  [end_to_end_flow]
 -  [source_code/RE3HDC]
 
-
-
+Task List
+------------
+- [ ] add random projection and permitation encodings
+- [ ] add more boards options to tcl
+- [ ] add non-bainary classification support
 
 
 * `List of [publications](https://xilinx.github.io/RCD_E3HDC/publications)
