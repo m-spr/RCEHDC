@@ -32,13 +32,10 @@ RE3HDC tutorials Resources
 -  [RE3HDC architetcure and pipelining](./hardware_over.md)
 -  [E3HDC hardware structure and paramiter generating](./hardware_param.md)
 -  [hardware description modeling](./hardware_desc.md)
-<<<<<<< HEAD
 -  [end_to_end_flow](./end_to_end.md)
-=======
--  [end_to_end_flow]
->>>>>>> 5e393d23f5e9cb7f2546dda5ebcee7baaec9e301
+-  [Description of HDC IP Implementation on PYNQ-Z2 Board](./HDC_ON_PYNQ.md)
 -  [source_code/RE3HDC]
-
+-  [List of publications](./publications.md)
 Task List
 ------------
 - [ ] add random projection and permitation encodings
@@ -46,5 +43,4 @@ Task List
 - [ ] add non-bainary classification support
 
 
-* `List of [publications](https://xilinx.github.io/RCD_E3HDC/publications)
  
