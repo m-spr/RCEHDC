@@ -31,7 +31,7 @@ RE3HDC tutorials Resources
 -  [E3HDC encoding](./_encoding.md)
 -  [RE3HDC architetcure and pipelining](./hardware_over.md)
 -  [E3HDC hardware structure and paramiter generating](./hardware_param.md)
--  [hardware discription]
+-  [hardware description modeling](./hardware_desc.md)
 -  [end_to_end_flow]
 -  [source_code/RE3HDC]
 
