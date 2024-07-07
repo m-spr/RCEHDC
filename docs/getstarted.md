@@ -1,7 +1,6 @@
 Get strat with RE3HDC platform 
 =====
 
-
 System Requirements:<br>
 Vivado 2022.2<br>
 Python 3.10<br>
