@@ -36,7 +36,7 @@ COMPONENT reg IS
 	);
 END COMPONENT;
 
-file mif_file : text open read_mode is "full"&integer'image(integer(classNumber))&"_"&integer'image(integer(classPortion))&".mif";
+file mif_file : text open read_mode is integer'image(integer(classNumber))&"_"&integer'image(integer(classPortion))&".mif";
 
 SIGNAL class : STD_LOGIC_VECTOR ((2**n)-1 DOWNTO 0);-- := to_stdlogicvector(temp_bv); -- := STD_LOGIC_VECTOR(TO_UNSIGNED(consInt, 2**n));
 SIGNAL toPop, popRST, regRST, memOut : STD_LOGIC;
