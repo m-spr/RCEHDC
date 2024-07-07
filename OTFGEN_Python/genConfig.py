@@ -34,26 +34,26 @@ def memMinimizer(d, f):
     return memSize[memOverhead.index(min(memOverhead))], k[memOverhead.index(min(memOverhead))]
 
 
-def sparseconfig(DIMENSIONS, featureSize, sparse, NUM_LEVELS, classes):
-    r       = int (DIMENSIONS%NUM_LEVELS)
-    pixbit  = math.ceil(math.log2(NUM_LEVELS))
-    lgf     = math.ceil(math.log2(featureSize))
+def sparseconfig(dimensions, features, sparse, num_levels, classes):
+    r       = int(dimensions%num_levels)
+    pixbit  = math.ceil(math.log2(num_levels))
+    lgf     = math.ceil(math.log2(features))
     c       = classes
-    f       = featureSize
-    n , adI = memMinimizer(DIMENSIONS - sparse, featureSize)
+    f       = features
+    n , adI = memMinimizer(dimensions - sparse, features)
     adz     = 2**(math.ceil(math.log2(adI)))-adI
     zComp   = 2**(math.ceil(math.log2(classes)))-classes
     lgCn    = math.ceil(math.log2(classes))
     logn    = math.ceil(math.log2(adI))
-    x       = math.ceil(DIMENSIONS/NUM_LEVELS)
+    x       = math.ceil(dimensions/num_levels)
 
-    if DIMENSIONS < x*NUM_LEVELS:
+    if dimensions < x*num_levels:
         x = x-1
     
     config = {
         "in_width"      : pixbit,
-        "dim_size"      : DIMENSIONS,
-        "sparsity"      : DIMENSIONS-sparse,
+        "dim_size"      : dimensions,
+        "sparsity"      : dimensions-sparse,
         "lgf"           : lgf,
         "num_classes"   : c,
         "feature_size"  : f,
@@ -69,24 +69,25 @@ def sparseconfig(DIMENSIONS, featureSize, sparse, NUM_LEVELS, classes):
     return config
 
   
-def config(DIMENSIONS, featureSize, NUM_LEVELS, classes):
-    r       = int (DIMENSIONS%NUM_LEVELS)
-    pixbit  = math.ceil(math.log2(NUM_LEVELS))
-    lgf     = math.ceil(math.log2(featureSize))
+def config(dimensions, features, num_levels, classes):
+    r       = int(dimensions%num_levels)
+    pixbit  = math.ceil(math.log2(num_levels))
+    lgf     = math.ceil(math.log2(features))
     c       = classes
-    f       = featureSize
-    n , adI = memMinimizer(DIMENSIONS, featureSize)
+    f       = features
+    n , adI = memMinimizer(dimensions, features)
     adz     = 2**(math.ceil(math.log2(adI)))-adI
     zComp   = 2**(math.ceil(math.log2(classes)))-classes
     lgCn    = math.ceil(math.log2(classes))
     logn    = math.ceil(math.log2(adI))
-    x       = math.ceil(DIMENSIONS/NUM_LEVELS)
+    x       = math.ceil(dimensions/num_levels)
 
-    if DIMENSIONS < x*NUM_LEVELS:
+    if dimensions < x*num_levels:
         x = x-1
+        
     config = {
         "in_width"      : pixbit,
-        "dim_size"      : DIMENSIONS,
+        "dim_size"      : dimensions,
         "sparsity"      : 0,
         "lgf"           : lgf,
         "num_classes"   : c,

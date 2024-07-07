@@ -20,7 +20,7 @@ def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
             with open(path+'mem/normal/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
-def class_normalize_memory_sparse (ls, mem_size, number_of_confComp, zeropadding, path):
+def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding, path):
     a = torch.load(path+"/model/chvs.pt")
     for k in range(len(a)):
         mystr =""
