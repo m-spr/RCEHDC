@@ -57,7 +57,7 @@ COMPONENT popCount IS
 			dout        : OUT  STD_LOGIC_VECTOR (lenPop-1 DOWNTO 0)
 		);
 	END COMPONENT;
-component blk_mem_gen_3 IS
+component blk_mem_gen_BV IS
   PORT (
     clka : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
@@ -65,7 +65,7 @@ component blk_mem_gen_3 IS
   );
 end component;
 
-component blk_mem_gen_2 IS
+component blk_mem_gen_ID IS
   PORT (
     clka : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
@@ -159,7 +159,6 @@ SIGNAL bvrst : std_logic;
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of pixel : signal is "TRUE";
 attribute MARK_DEBUG of BV : signal is "TRUE";
---attribute MARK_DEBUG of pixelMemOutIndex : signal is "TRUE";
 attribute MARK_DEBUG of idLevelOut : signal is "TRUE";
 attribute MARK_DEBUG of rstpop : signal is "TRUE";
 attribute MARK_DEBUG of classIndex : signal is "TRUE";
@@ -169,24 +168,14 @@ attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
 attribute MARK_DEBUG of pointer : signal is "TRUE";
 attribute MARK_DEBUG of counter : signal is "TRUE";
 attribute MARK_DEBUG of done : signal is "TRUE";
---attribute MARK_DEBUG of encoderTodiv : signal is "TRUE";
 
 BEGIN
 rst <= not(rstl);
 encoderTodiv <= encodeVecZero & QHV;
 rstpop1 <= '1' when  indexdatamem11 = "1010101110000" else '0';
---memen <= '1';
 rstpop <= rstpop1 or rst;
---pixelMemOutIndex <= indexdatamem;
 indexdatamem <=  indexdatamem11 & "00";
 
---inputReg : reg
---	GENERIC map(pixbit)   -- bit width out popCounters
---	PORT map(
---		clk , run, rst,
---		pixel,
---		pixelreg
---	);
 
 pop : 	popCount
 		GENERIC map(13)
@@ -197,20 +186,13 @@ pop : 	popCount
 		);
 bvrst <= rst OR doneEncoderToClassifier or rstpop;
 	
-    idGen: blk_mem_gen_2
+    idGen: blk_mem_gen_ID
 	Port map( clk , pixel,
            idLevelOut
     );
     
---idGenreg : reg
---	GENERIC map(d )   -- bit width out popCounters
---	PORT map(
---		clk , run, rst,
---		idLevelOut,
---		idLevelOutreg
---	);
 
-	BVGen: blk_mem_gen_3 
+	BVGen: blk_mem_gen_BV
     PORT MAP(
         clk,
         counter,
@@ -226,18 +208,6 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 		counter, QHV
 	);
 
---	div: hvTOcompIn
---    GENERIC MAP
---    (
---        adI*(2**n), n, adI
---	)
---    PORT map
---    (
---        clk, rst,
---        encoderTodiv,
---        pointer,
---        divToClass
---    );
 
 	cls: classifier
 	GENERIC map ( adI*(2**n), c, n, adI, adz, zComp ,lgCn, logn)
@@ -248,14 +218,4 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 		classIndex
 	);
 
---    regTLAST_S : regOne 
---	GENERIC MAP('0')
---	PORT MAP(
---		clk , done, rst, done, TLAST_S  
---	);
---    regTVALID_S : regOne 
---	GENERIC MAP('0')
---	PORT MAP(
---		clk , done, rst, done, TVALID_S  
---	);
 End architecture;

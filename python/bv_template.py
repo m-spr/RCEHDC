@@ -4,7 +4,7 @@ set PROJECT_DIR %s
 set BOARD %s
 set CHVS "%s"
 set HDC_DIR %s
-set SOURCEFILES %s
+set SOURCEFILES "%s"
 set ENCODING %s
 set VIVADO_VERSION %s
 set FREQ_MHZ %d
@@ -32,12 +32,18 @@ puts DONE
 """
 
 create_ip_tcl_template="""
+set FEATURES %d
+set DIMENSIONS %d
+set LEVELS %d
+
 ipx::package_project -root_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports -vendor user.org -library user -taxonomy /UserIP
 set_property core_revision 2 [ipx::current_core]
 ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 set_property  ip_repo_paths  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports [current_project]
+
+
 update_ip_catalog
 
 
@@ -78,46 +84,69 @@ set_property physical_name TREADY_M [ipx::get_port_maps TREADY -of_objects [ipx:
 ipx::associate_bus_interfaces -busif M_AXI -clock clk [ipx::current_core]
 ipx::associate_bus_interfaces -busif S_AXI -clock clk [ipx::current_core]
 
-set NEW_CONSTANT_VALUE_1 {"%s"}
-set NEW_CONSTANT_VALUE_2 {"%s"}
-# Set the reference directory for source file relative paths 
-# set origin_dir [file dirname [file normalize [info script]]]
-# Open the file to be modified (FILE1) and the temporary file (FILE2).
-set FILE1 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd r]
-set FILE2 [ open $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR_temp.vhd w]
+puts DONE
+"""
 
-while { [ gets $FILE1 LINE ] >= 0 } {
-    # Search for the constant declarations
-    set INDEX_1 [ string match -nocase *constant*congigSigniture* $LINE ]
-    set INDEX_2 [ string match -nocase *constant*congigInitialvalues* $LINE ]
-  
-    # Replace Configuration parameters with the desired values
-    if { $INDEX_1 == 1 } {
-        puts $FILE2 "CONSTANT congigSigniture : STD_LOGIC_VECTOR (n-1 DOWNTO 0) := ${NEW_CONSTANT_VALUE_1}; "
-    } elseif { $INDEX_2 == 1 } {
-        puts $FILE2 "CONSTANT congigInitialvalues : STD_LOGIC_VECTOR (n-1 DOWNTO 0) := ${NEW_CONSTANT_VALUE_2}; "
-    } else {
-    # Write this line, unchanged, to the temporary file if not found.
-        puts $FILE2 $LINE
-    }
-}
-    
-# Close both files
-close $FILE1
-close $FILE2
-# Rename temporary file
-file rename -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR_temp.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd
+insert_block_mem="""
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_BV
+#CONFIG.Component_Name {blk_mem_gen_BV} \
+set_property -dict [list \
+  CONFIG.Coe_File ${PROJECT_DIR}/mem/BV_img.coe \
+  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Interface_Type {Native} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+  CONFIG.Use_RSTB_Pin {false} \
+  CONFIG.Write_Depth_A [expr int($FEATURES)] \
+  CONFIG.Write_Width_A [expr int($DIMENSIONS)] \
+] [get_ips blk_mem_gen_BV]
+generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci]
+update_compile_order -fileset sources_1
+generate_target all [get_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci]
+catch { config_ip_cache -export [get_ips -all blk_mem_gen_BV] }
+export_ip_user_files -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci]
+launch_runs blk_mem_gen_BV_synth_1 -jobs 8
+export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci] -directory $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/sim_scripts -ip_user_files_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files -ipstatic_source_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/ipstatic -lib_map_path [list {modelsim=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/modelsim} {questa=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/questa} {xcelium=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/xcelium} {vcs=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/vcs} {riviera=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
 
 
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_ID
+#  CONFIG.Component_Name {blk_mem_gen_ID} \
+set_property -dict [list \
+  CONFIG.Coe_File ${PROJECT_DIR}/mem/ID_img.coe \
+  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Interface_Type {Native} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+  CONFIG.Use_RSTB_Pin {false} \
+  CONFIG.Write_Depth_A [expr int($LEVELS)] \
+  CONFIG.Write_Width_A [expr int($DIMENSIONS)] \
+] [get_ips blk_mem_gen_ID]
+generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci]
+update_compile_order -fileset sources_1
+generate_target all [get_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci]
+catch { config_ip_cache -export [get_ips -all blk_mem_gen_ID] }
+export_ip_user_files -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci]
+launch_runs blk_mem_gen_ID_synth_1 -jobs 8
+export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci] -directory $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/sim_scripts -ip_user_files_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files -ipstatic_source_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/ipstatic -lib_map_path [list {modelsim=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/modelsim} {questa=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/questa} {xcelium=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/xcelium} {vcs=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/vcs} {riviera=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+
+"""
+
+repackage_ip="""
 #repackage IP 
-
 set_property core_revision 3 [ipx::current_core]
 ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 ipx::save_core [ipx::current_core]
 update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports
-#save_bd_design
 ipx::merge_project_changes files [ipx::current_core]
 
 puts DONE
@@ -125,6 +154,7 @@ puts DONE
 
 
 create_block_design="""
+set SPARSITY %d
 
 #make diagram 
 create_bd_design "design_1"
@@ -230,7 +260,9 @@ startgroup
 set_property -dict [list CONFIG.pixbit {%d} CONFIG.d {%d} CONFIG.lgf {%d} CONFIG.c {%d} CONFIG.featureSize {%d} CONFIG.n {%d} CONFIG.adI {%d} CONFIG.adz {%d} CONFIG.zComp {%d} CONFIG.lgCn {%d} CONFIG.logn {%d} CONFIG.r {%d} CONFIG.x {%d}] [get_bd_cells fulltopHDC_0]
 endgroup
 
-
+if { $SPARSITY > 0 } {
+  set_property -dict [list CONFIG.sparse [expr int($SPARSITY)]] [get_bd_cells fulltopHDC_0]
+}
 
 regenerate_bd_layout
 validate_bd_design
@@ -270,68 +302,4 @@ write_bd_tcl -force $PROJECT_DIR/release/design_1.tcl
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.runs/impl_1/design_1_wrapper.bit $PROJECT_DIR/release/design_1.bit
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.gen/sources_1/bd/design_1/hw_handoff/design_1.hwh $PROJECT_DIR/release/design_1.hwh
 puts DONE
-"""
-
-"""
-# DONE
-export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/bd/design_1/design_1.bd] -directory $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/sim_scripts -ip_user_files_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files -ipstatic_source_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/ipstatic -lib_map_path [list {modelsim=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/modelsim} {questa=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/questa} {xcelium=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/xcelium} {vcs=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/vcs} {riviera=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
-report_ip_status -name ip_status 
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fulltop.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fulltop.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hdcTest.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/classifier.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/id_level.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/popCount.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/encoder.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hvTOcompIn.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hdcTest.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/classifier.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/id_level.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/popCount.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/BasedVectorLFSR.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/encoder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/hvTOcompIn.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimTop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparatorTop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringInputPop.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringPopCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/regOne.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparatorTop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringInputPop.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/XoringPopCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/regOne.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparator.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/reg.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSim.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdderCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/confCompCtrl.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimCtrl.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/comparator.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/reg.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSim.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdderCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/confCompCtrl.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/countingSimCtrl.vhd}
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fullconfComp.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/fullconfComp.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/RSA.vhd] -no_script -reset -force -quiet
-remove_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/RSA.vhd
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdder.vhd] -no_script -reset -force -quiet
-export_ip_user_files -of_objects  [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/recMux.vhd] -no_script -reset -force -quiet
-remove_files  {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/SeqAdder.vhd $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/$ENCODING/recMux.vhd}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-open_bd_design {$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/bd/design_1/design_1.bd}
-write_hw_platform -fixed -include_bit -force -file /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_0/design_1.xsa
-write_bd_tcl -force /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_0/design_1.tcl
-file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.runs/impl_1/design_1_wrapper.bit /localdata/sadmah00/github/RCD_E3HDC/vivado/DMA_0/design_1.bit
-
-
-
-
-
-
-
-
-
-
 """

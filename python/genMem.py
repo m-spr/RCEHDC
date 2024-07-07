@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import os
+import math
 
 def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
     a = torch.load(path+"/model/chvs.pt")
@@ -33,12 +34,12 @@ def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding,
             with open(path+'mem/sparse/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
-def write_memory(path, DIMENSIONS):
+def write_memory(path, dimensions, levels):
     XORs     = torch.load(path+"model/xors.pt")
     position = torch.load(path+"model/sequence.pt")
 
     strXors = ""
-    for i in range(DIMENSIONS):
+    for i in range(dimensions):
         if i in XORs :
               strXors = strXors + '1'
         else:
@@ -70,6 +71,27 @@ def write_memory(path, DIMENSIONS):
             output.write(i)
             #output.write('"')
             output.write(",\n")
+
+    c = int(math.floor(dimensions/levels))
+    id_mem = []
+    pointer =  math.ceil(math.log2(levels))
+    for i in range(2**pointer):
+        mystr = ""
+        if i == 0 :
+            mystr = "0"*dimensions
+        elif i == 2**pointer-1 :
+            mystr = "1"*dimensions
+        else :
+            mystr = "0"*(dimensions-(i*c))+"1"*(i*c)
+        id_mem.append(mystr)
+
+    with open(path+'mem/ID_img.coe', 'w') as output:
+        output.write("memory_initialization_radix=2;\n")
+        output.write("memory_initialization_vector=\n")
+        for i in id_mem:
+            output.write(i)
+            output.write("\n")
+        output.write(";")
 
 def gen_sparsemodule(path, ls, DIMENSIONS):
     os.system('touch '+path+'/connector.vhd')
