@@ -2,7 +2,7 @@
 
 To develop a fully generic hardware accelerator that can address any problem without relying on High-Level Synthesis (HLS), we make extensive use of VHDL. In our approach, not only the bitwidths of the signals are generic, but also the implementation configuration is addressed by generic parameters in the top module, which makes the design very flexible and scalable. For this purpose, all submodules of the architecture are designed to be parameterizable by using one of the generic concepts, such as For generate and recursive hardware generate.
 
-To achieve a generic or recursive coding structure, processing distribution must be symmetrical and well partitioned between the components. Detailed explanations of how these parameters are generated can be found [here] (./generate_config.md).
+To achieve a generic or recursive coding structure, processing distribution must be symmetrical and well partitioned between the components. Detailed explanations of how these parameters are generated can be found [here](./generate_config.md).
 
 In the following, a few samples of the madules are discribed.
 
