@@ -10,4 +10,4 @@ test*
 *.mif
 *.xpr
 *.xml
-
+.Xil/
