@@ -24,7 +24,7 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-DIMENSIONS = 1100
+DIMENSIONS = 1000
 IMG_SIZE = 28
 NUM_LEVELS = 256
 c = int(math.floor(DIMENSIONS/NUM_LEVELS))
@@ -219,26 +219,26 @@ def BV_ID_memory_sparse (posision, ls):
 
 
     ########## old version 
-    # id_mem = []
-    # poniter =  math.ceil(math.log2(NUM_LEVELS))
-    # for i in range(2**poniter):
-    #     mystr = ""
-    #     if i == 0 :
-    #         mystr = "0"*d
-    #     elif i == 2**poniter-1 :
-    #         mystr = "1"*d
-    #     else :
-    #         mystr = "0"*(d-(i*c))+"1"*(i*c)
-    #     id_mem.append(mystr)
-    # #for i in id_mem:
-        #print (i)
-    # with open('mem/ID_img.coe', 'w') as output:
-    #     output.write("memory_initialization_radix=2;\n")
-    #     output.write("memory_initialization_vector=\n")
-    #     for i in id_mem:
-    #         output.write(i)
-    #         output.write("\n")
-    #     #output.write(";")
+    id_mem = []
+    poniter =  math.ceil(math.log2(NUM_LEVELS))
+    for i in range(2**poniter):
+        mystr = ""
+        if i == 0 :
+            mystr = "0"*d
+        elif i == 2**poniter-1 :
+            mystr = "1"*d
+        else :
+            mystr = "0"*(d-(i*c))+"1"*(i*c)
+        id_mem.append(mystr)
+    #for i in id_mem:
+        print (i)
+    with open('mem/ID_img.coe', 'w') as output:
+        output.write("memory_initialization_radix=2;\n")
+        output.write("memory_initialization_vector=\n")
+        for i in id_mem:
+            output.write(i)
+            output.write("\n")
+        #output.write(";")
     # with open('mem/ID_img.mif', 'w') as output:
     #     for i in id_mem:
     #         #output.write('"')
@@ -259,6 +259,7 @@ def class_normalize_memory (a, mem_size, number_of_confComp, zeropadding):
             else:
                 mystr =  mystr + "0" 
         zeros = '0'*zeropadding
+        print(mystr)
         mystr = zeros + mystr
         #print("     ",k ,"  : ",mystr)
         for m in range(number_of_confComp):
@@ -306,9 +307,10 @@ def Sparsemodule(ls):
 
 def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding, ls):
     for k in range(len(a)):
+        print( k , st(a[k]))
         mystr =""
         indices_to_keep = [i not in ls for i in np.arange(0,DIMENSIONS)]
-        mystr = ["".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]]) for k in num_classes]
+        mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])
         # for m in range(len(a[k])):
         #     if m in ls:
         #         pass
@@ -317,8 +319,8 @@ def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding,
         #             mystr =  mystr + "1" 
         #         else:
         #             mystr =  mystr + "0" 
-        indices_to_keep = [i not in ls for i in np.arange(0,len(a[k]))]
-        mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])  # for c in range(len(a))]
+        #indices_to_keep = [i not in ls for i in np.arange(0,len(a[k]))]
+        #mystr = "".join(["1" if a_i > 0 else "0" for a_i in a[k][indices_to_keep]])  # for c in range(len(a))]
         # for m in range(len(a[k])):
         #     if m in ls:
         #         pass
@@ -328,6 +330,7 @@ def class_normalize_memory_sparse (a, mem_size, number_of_confComp, zeropadding,
         #         else:
         #             mystr =  mystr + "0" 
         zeros = '0'*zeropadding
+        print(mystr)
         mystr = zeros + mystr
         print(mystr)
         for m in range(number_of_confComp):
@@ -439,10 +442,11 @@ class Encoder(nn.Module):
         self.value.weight = tArr.float()
 
         init_num = random.randint(1, 2**out_features)
-        #init_num = 4005700534675144948017520162097884868995542063410121040524186571954440390130004122707793153004062360041636382462054526905859450700091502234942087738732084346636139513840569559345488256204180986892293042541798471825399139750542421374166982260754066786698152028283234760575400288349132987005389102090211
+        init_num = 1045639766848499969483384057518705528530422271055899601722271709064472872913414266043433370489769964370318325427066696781119585238546478212274395161201173870951624534839269117703668042171703147198675585850563746653470238510729099645909743811793583566044545686655592848396590414423731869789424422308210  #4945475148082470749582765439653569115104582685207059076139818412852070255545925792436835807238417293067524039226844134772686893441889276192149803294914659714847168417414999271435874001247492243259468813405223584427939841045773740098727708134575918186909650222187407561941532856119182894192632025810382
         XORs_num = random.randint(2**(out_features-1), 2**out_features)
-        #XORs_num = 8304480432096973745855277495005820904147225062766752395232516640190584805313156405292672642268352808496341593728537662541323806162655398579460968638548439233518083677818779822153866372461399193020495636799816940385452684276171359521470779611083416341728702669855951160018696384825076986035152844977163        print(init_num)
-        #print(XORs_num)
+        XORs_num = 9803744867548779847669278070814751618898247871472956409430055428568059251270880305199286379221191823226577416893829369104403081459033575930957482691925761695444256169920567064095087501457062430826807295396869630854578857458685932231320655578899751745996578191437224846368089320128310179113536579659383  #5711978676843633633986610354577114972861047731440312520380063436931516560309543819565411981191755875849728521717947413612852820619454690525260281143293731390535764528822712057458628361545252419560188709894199912696510104295269263332451564426252902863585833887145042897561471636666608118995519051363627        
+        print(init_num)
+        print(XORs_num)
         init = [eval(i) for i in [*bin(init_num)[2:]]]
         init.extend([0] * (out_features - len(init)))
         XORs = [i for i, x in enumerate(reversed([*bin(XORs_num)[2:]])) if x == '1']
