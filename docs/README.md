@@ -40,6 +40,7 @@ Task List
 - [ ] add random projection and permitation encodings
 - [ ] add more boards options to tcl
 - [ ] add non-bainary classification support
+- [ ] modify the TKEEP signal
 
 If you are using our framework, please cite:
 ```
