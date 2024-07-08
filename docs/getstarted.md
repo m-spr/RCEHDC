@@ -14,6 +14,7 @@ The required python packages should now be installed for the environment.
 4. Set the path and version of your vivado installation in "run_hdcgen.sh"
 
 Test your installation by running: run_hdcgen.sh mnist_example/
+You can find the generated .bit and .hwh file in the "release" folder of the directory.
 
 General usage:
 Create a folder containing a file called "hdc.py" which contains your training and test procedure with the functions "train" and "test".
