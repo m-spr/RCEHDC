@@ -43,7 +43,7 @@ Task List
 - [ ] add non-bainary classification support
 
 If you are using our framework, please cite:
-
+```
 @inproceedings{roodsari2024otfgencoder,
   title={OTFGEncoder-HDC: Hardware-efficient Encoding Techniques for Hyperdimensional Computing},
   author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Tahoori, Mehdi},
@@ -52,6 +52,6 @@ If you are using our framework, please cite:
   year={2024},
   organization={IEEE}
 }
-
+```
 
  
