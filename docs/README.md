@@ -42,6 +42,16 @@ Task List
 - [ ] add more boards options to tcl
 - [ ] add non-bainary classification support
 
+If you are using our framework, please cite:
+
+@inproceedings{roodsari2024otfgencoder,
+  title={OTFGEncoder-HDC: Hardware-efficient Encoding Techniques for Hyperdimensional Computing},
+  author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Tahoori, Mehdi},
+  booktitle={2024 Design, Automation \& Test in Europe Conference \& Exhibition (DATE)},
+  pages={1--2},
+  year={2024},
+  organization={IEEE}
+}
 
 
  
