@@ -9,7 +9,7 @@ import torchmetrics
 from tqdm import tqdm
 
 import torchhd
-from torchhd.models import Centroid
+from models import Centroid
 from torchhd import embeddings
 
 import math
