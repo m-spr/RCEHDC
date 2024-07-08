@@ -97,7 +97,7 @@ class Centroid(nn.Module):
     def reset_parameters(self) -> None:
         init.zeros_(self.weight)
 
-    def forward(self, input: Tensor, dot=True) -> Tensor:
+    def forward(self, input: Tensor, dot=False) -> Tensor:
         if dot:
             return functional.dot_similarity(input, self.weight)
         
@@ -109,7 +109,7 @@ class Centroid(nn.Module):
         self.weight.index_add_(0, target, input, alpha=lr)
 
     @torch.no_grad()
-    def add_online(self, input: Tensor, target: Tensor, lr: float = 1.0, sim: str = "cos") -> None:
+    def add_online(self, input: Tensor, target: Tensor, lr: float = 1.0, dot=False) -> None:
         r"""Only updates the prototype vectors on wrongly predicted inputs.
 
         Implements the iterative training method as described in `OnlineHD: Robust, Efficient, and Single-Pass Online Learning Using Hyperdimensional System <https://ieeexplore.ieee.org/abstract/document/9474107>`_.
@@ -120,7 +120,7 @@ class Centroid(nn.Module):
         and :math:`\delta` is the cosine similarity of the input with the target class prototype.
         """
         # Adapted from: https://gitlab.com/biaslab/onlinehd/-/blob/master/onlinehd/onlinehd.py
-        logit = self(input, sim=sim)
+        logit = self(input, dot=dot)
         pred = logit.argmax(1)
         is_wrong = target != pred
 
