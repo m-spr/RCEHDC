@@ -33,7 +33,7 @@ RE3HDC tutorials Resources
 - [RCEHDC hardware structure and paramiter generating](/docs/hardware_param.md)
 - [hardware description modeling](/docs/hardware_desc.md)
 - [end_to_end_flow](/docs/end_to_end.md)
-- [list of publications](/docs/publications)
+- [list of publications](/docs/publications.md)
 
 Task List
 ------------
