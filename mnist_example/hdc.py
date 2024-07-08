@@ -9,8 +9,12 @@ import torchmetrics
 from tqdm import tqdm
 
 import torchhd
-from models import Centroid
 from torchhd import embeddings
+
+import pathlib
+path = str(pathlib.Path(__file__).parent.resolve())
+
+from models import Centroid
 
 import math
 
@@ -18,9 +22,6 @@ import numpy as np
 import random
 import sys
 import os
-
-import pathlib
-path = str(pathlib.Path(__file__).parent.resolve())
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(threshold=sys.maxsize)
@@ -140,14 +141,9 @@ def test():
     accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)
     model.normalize(quantize=True)
     with torch.no_grad():
-        print_flag = 1
         count = 0
         for samples, labels in tqdm(test_ld, desc="Testing"):
             count = count + 1
-            if count %850 == 0:
-                print_flag = 1
-            else:
-                print_flag = 0
             samples = samples.to(device)
             samples_hv = encode(samples)
             outputs = model(samples_hv, dot=True)
