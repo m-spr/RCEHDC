@@ -32,8 +32,9 @@ RE3HDC tutorials Resources
 - [RCEHDC architetcure and pipelining](/docs/hardware_over.md)
 - [RCEHDC hardware structure and paramiter generating](/docs/hardware_param.md)
 - [hardware description modeling](/docs/hardware_desc.md)
-- [end_to_end_flow](/docs/end_to_end.md)
+- [end_to_end flow](/docs/end_to_end.md)
 - [HDC IP Implementation on PYNQ-Z2 Board](/docs/HDC_ON_PYNQ.md)
+- [supported models](/docs/hardware_folder.md)
 - [list of publications](/docs/publications.md)
 
 Task List
