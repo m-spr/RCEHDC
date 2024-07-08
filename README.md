@@ -1,4 +1,4 @@
-# RCD_E3HDC
+# RCEHDC
 HDC platform 
 
 System Requirements:<br>
