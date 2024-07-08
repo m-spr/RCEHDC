@@ -1,12 +1,12 @@
 ![logo](../figures/logo.jpg)
 
-Welcome to the RE3HDC documentation!
+Welcome to the RCEHDC documentation!
 =====================================
 
-The reconfigurable Energy Efficient Encoding HDC (RE3HDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
-The ROC-E3HDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RE3HDC are shown in the figure below and can be described as follows:
+The reconfigurable Energy Efficient Encoding HDC (RCEHDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
+The RCEHDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RCEHDC are shown in the figure below and can be described as follows:
 
-![overview](../figures/overview.png){:width="300px";}
+![overview](../figures/overview.png)
 
 
 - **End-to-End Framework**
@@ -26,29 +26,34 @@ The ROC-E3HDC project is an experimental framework for the implementation of HDC
 
 RE3HDC tutorials Resources
 ===================
-- [getting_started with RE3HDC](?)
-- The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
--  [E3HDC encoding](./_encoding.md)
--  [RE3HDC architetcure and pipelining](./hardware_over.md)
--  [E3HDC hardware structure and paramiter generating](./hardware_param.md)
--  [hardware description modeling](./hardware_desc.md)
-<<<<<<< HEAD
--  [end_to_end_flow](./end_to_end.md)
--  [Description of HDC IP Implementation on PYNQ-Z2 Board](./HDC_ON_PYNQ.md)
-=======
-<<<<<<< HEAD
--  [end_to_end_flow](./end_to_end.md)
-=======
--  [end_to_end_flow]
->>>>>>> 5e393d23f5e9cb7f2546dda5ebcee7baaec9e301
->>>>>>> 34b83bffc032b0947d9abdee09448912bafc0aa5
--  [source_code/RE3HDC]
--  [List of publications](./publications.md)
+- [getting_started with RCEHDC](/docs/getstarted.md)
+- [RCEHDC examples repository](/mnist_example)  
+- [RCEHDC encoding](/docs/_encoding.md)
+- [RCEHDC architetcure and pipelining](/docs/hardware_over.md)
+- [RCEHDC hardware structure and paramiter generating](/docs/hardware_param.md)
+- [hardware description modeling](/docs/hardware_desc.md)
+- [end_to_end flow](/docs/end_to_end.md)
+- [HDC IP Implementation on PYNQ-Z2 Board](/docs/HDC_ON_PYNQ.md)
+- [supported models](/docs/hardware_folder.md)
+- [list of publications](/docs/publications.md)
+
 Task List
 ------------
 - [ ] add random projection and permitation encodings
 - [ ] add more boards options to tcl
 - [ ] add non-bainary classification support
+- [ ] modify the TKEEP signal
 
+If you are using our framework, please cite:
+```
+@inproceedings{roodsari2024otfgencoder,
+  title={OTFGEncoder-HDC: Hardware-efficient Encoding Techniques for Hyperdimensional Computing},
+  author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Tahoori, Mehdi},
+  booktitle={2024 Design, Automation \& Test in Europe Conference \& Exhibition (DATE)},
+  pages={1--2},
+  year={2024},
+  organization={IEEE}
+}
+```
 
  
