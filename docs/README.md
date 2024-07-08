@@ -6,7 +6,7 @@ Welcome to the RCEHDC documentation!
 The reconfigurable Energy Efficient Encoding HDC (RCEHDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
 The RCEHDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RCEHDC are shown in the figure below and can be described as follows:
 
-![overview](../figures/overview.png){:width="300px";}
+![overview](../figures/overview.png)
 
 
 - **End-to-End Framework**
@@ -33,7 +33,7 @@ RE3HDC tutorials Resources
 - [RCEHDC hardware structure and paramiter generating](/docs/hardware_param.md)
 - [hardware description modeling](/docs/hardware_desc.md)
 - [end_to_end_flow](/docs/end_to_end.md)
-- [List of publications](https://xilinx.github.io/RCEHDC/publications)
+- [list of publications](/docs/publications)
 
 Task List
 ------------
