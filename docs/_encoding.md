@@ -24,7 +24,7 @@ So far, E3HDC only supports the base level encoding due to its hardware-efficien
 
 the encoding at the base level starts with the use of an ID matrix that maps all possible scalar values of the input vector into the hyperdimensional space (see below).
 
-![Basic level encoding](../figures/IDBV.png)
+![Basic level encoding](../figures/Basic_level_encoding.png)
 
 The ID-level matrix is a static set of binary/bipolar HVs generated to translate differences in feature values directly into similarity in hyperspace:
  - The difference between scalar values must correspond to the dissimilarity of the generated HVs, i.e. two values with a larger difference must be mapped to HVs with larger dissimilarity.
