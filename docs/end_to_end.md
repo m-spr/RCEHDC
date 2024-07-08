@@ -25,4 +25,4 @@ To summarize, the hardware generation goes through the following steps:
 8. Generating Bitstream
 9. Preparing Driver (.bit and .hwh file)
 
-![endtoend](../figures/rcehdc_end_to_end.pdf)
+![endtoend](../figures/end_to_end.png)
