@@ -8,7 +8,7 @@ Conda / Miniconda (recommended)<br>
 
 Setup steps:<br>
 1. Create a new conda environment: conda create --name rcehdc python=3.10.12<br>
-2. conda activate e3hdc<br>
+2. conda activate rcehdc<br>
 3. Run: ./setup.sh<br>
 The required python packages should now be installed for the environment.
 4. Set the path and version of your vivado installation in "run_hdcgen.sh"
