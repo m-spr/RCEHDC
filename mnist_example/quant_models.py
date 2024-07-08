@@ -21,19 +21,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-import math
-from typing import Type, Union, Optional
+from typing import Optional
 import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn.parameter import Parameter
 import torch.nn.init as init
-import torch.utils.data as data
-from tqdm import tqdm
 
 
 import torchhd.functional as functional
-import torchhd.datasets as datasets
 import torchhd.embeddings as embeddings
 
 
@@ -96,7 +92,7 @@ class Centroid(nn.Module):
 
     def reset_parameters(self) -> None:
         init.zeros_(self.weight)
-
+    
     def forward(self, input: Tensor, dot: bool = False) -> Tensor:
         if dot:
             return functional.dot_similarity(input, self.weight)
