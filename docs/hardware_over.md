@@ -49,13 +49,13 @@ Since the number of classes is always smaller than the number of features (\text
 
 Hardware Optimization
 ----------
-To improve the efficiency of the processing hardware in HDC, we investigate the possibility of eliminating the calculations based on the classification nature in \ac{HDC}.
+To improve the efficiency of the processing hardware in HDC, we investigate the possibility of eliminating the calculations based on the classification nature in HDC.
 In HDC, the classification results do not depend on exact similarity scores, but on the relative similarity of classes within the CHV by detecting the most similar one.
 By considering the importance of relative scores over absolute scores in the classification results, it becomes notable that certain elements within all CHVs have identical effects on all categorization results.
 
-For this purpose, an analysis of all \acp{CHV} is performed after training and quantization, and all their comparable elements are retrieved based on their respective positions.
+For this purpose, an analysis of all CHV is performed after training and quantization, and all their comparable elements are retrieved based on their respective positions.
 Subsequently, the XOR+Popcount operations associated with these elements are pruned from the encoding part of the architecture. 
-As a result, they are no longer included in the generated \ac{QHV}. 
-At the same time, all these components are also pruned from \acp{CHV}, resulting in the entire hardware functioning in a reduced dimension space.
+As a result, they are no longer included in the generated QHV. 
+At the same time, all these components are also pruned from CHV, resulting in the entire hardware functioning in a reduced dimension space.
 
 In summary, we can identify the most important dimensions and perform computations only on them to reduce the hardware, with no impact on the classification result and thus, ensure an efficient hardware utilization.
