@@ -26,13 +26,13 @@ The RCEHDC project is an experimental framework for the implementation of HDC on
 
 RE3HDC tutorials Resources
 ===================
-- [getting_started with RCEHDC](./docs/getstarted.md)
-- [RCEHDC examples repository](./mnist_example)  
-- [RCEHDC encoding](./_encoding.md)
-- [RCEHDC architetcure and pipelining](./hardware_over.md)
-- [RCEHDC hardware structure and paramiter generating](./hardware_param.md)
-- [hardware description modeling](./hardware_desc.md)
-- [end_to_end_flow](./end_to_end.md)
+- [getting_started with RCEHDC](/docs/getstarted.md)
+- [RCEHDC examples repository](/mnist_example)  
+- [RCEHDC encoding](/_encoding.md)
+- [RCEHDC architetcure and pipelining](/hardware_over.md)
+- [RCEHDC hardware structure and paramiter generating](/hardware_param.md)
+- [hardware description modeling](/hardware_desc.md)
+- [end_to_end_flow](/end_to_end.md)
 - [List of publications](https://xilinx.github.io/RCD_E3HDC/publications)
 
 Task List
