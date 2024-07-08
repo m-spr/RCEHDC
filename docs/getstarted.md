@@ -35,3 +35,8 @@ Next to the training script "hdc.py" you require a configuration file, which sho
 ```
 
 Currently, only LFSR and sparseLFSR is supported. We are working on extending also to the standard base level encoding implementation.
+
+A Vivado project with PROJECT_NAME will be created at the specified directory. For each step, a log file will be created. Some of the logs, related to the Vivado runs (synthesis and implementation), will be generated in the corresponding project directory, such as "synth_1".
+In the rare case of out-of-context synthesis failing, the program might hang due to missing feedback from Vivado. The program can be safely exited in that case. We will soon add a check for this as well.
+
+The usual hardware generation should take around 700 or 450 seconds on a standard office laptop, for LFSR and sparseLFSR respectively. If it takes significantly longer, please try again with different parameters or check the log files of the OOC runs.
