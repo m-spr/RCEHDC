@@ -81,40 +81,26 @@ class Encoder(nn.Module):
         #### my levels
         levels = []
         for number in range(NUM_LEVELS):
-            #print(number, end = ", ")
             my_list = []
             if number == 0:
                 my_list = [-1]*(DIMENSIONS)
             elif number == NUM_LEVELS-1:
                 my_list = [1]*(DIMENSIONS)
             else:
-                #my_list = [-1]*(DIMENSIONS-(number*c)) + [1]*(number*c)
                 mm = [-1]*(NUM_LEVELS-(number)) + [1]*(number)
                 for i in range(c):
                     my_list = mm + my_list
                 if  r!= 0:
                     my_list = mm[-r::] + my_list
-            #st (my_list)
-            #my_list = my_list[::-1]
-            # if number == 230:
-            #     print("\n")
-            #     st (my_list)
             
             levels.append(my_list)
-        #print("len (mm[r::]) \n",len(mm[-r::]), "len (mm[::r])",len (mm[::r]))
-        #print(r)
-        #print(c)
         arr = np.array(levels)
-        #print("ID_LEVELS")
-        #print(arr)
-        #np.save("./mem/mnist_levels.npy", arr)
         tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
         self.value.weight = tArr.float()
 
-        #self.init_num = random.randint(1, 2**out_features)
-        self.init_num = 1045639766848499969483384057518705528530422271055899601722271709064472872913414266043433370489769964370318325427066696781119585238546478212274395161201173870951624534839269117703668042171703147198675585850563746653470238510729099645909743811793583566044545686655592848396590414423731869789424422308210 
-        #XORs_num = random.randint(2**(out_features-1), 2**out_features)
-        XORs_num = 9803744867548779847669278070814751618898247871472956409430055428568059251270880305199286379221191823226577416893829369104403081459033575930957482691925761695444256169920567064095087501457062430826807295396869630854578857458685932231320655578899751745996578191437224846368089320128310179113536579659383 
+        self.init_num = random.randint(1, 2**out_features)
+        XORs_num = random.randint(2**(out_features-1), 2**out_features)
+        
         init = [eval(i) for i in [*bin(self.init_num)[2:]]]
         init.extend([0] * (out_features - len(init)))
         self.XORs = [i for i, x in enumerate(reversed([*bin(XORs_num)[2:]])) if x == '1']
@@ -125,8 +111,6 @@ class Encoder(nn.Module):
         tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
         self.position.weight = tArr.float()
     
-        #genConfig (XORs, init_num, DIMENSIONS)
-        #write_memory(self.XORs, self.init_num, self.generated_sequence, NUM_LEVELS, DIMENSIONS)
 
     def forward(self, x):
         x = self.flatten(x)
@@ -177,4 +161,3 @@ def test():
     torch.save(encode.XORs,                 path+"/model/xors.pt")
     torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
 
-#ls = class_sparsity (model.weight)
