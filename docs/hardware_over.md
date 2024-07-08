@@ -1,7 +1,7 @@
 RE3HDC Architecure 
 =======
 
-The following is an overview of the RE3HDC hardware architecture, which consists of the typical two main stages: encoding and classification.
+The following is an overview of the RCEHDC hardware architecture, which consists of the typical two main stages: encoding and classification.
 Our main goals for the hardware architecture are reconfigurability and low resource consumption without sacrificing throughput. This is achieved through highly flexible VHDL constructs and a sophisticated pipeline design.
 
 ![E3HDC_pipeline and architecture](../figures/E3HDC_pipe.png)
