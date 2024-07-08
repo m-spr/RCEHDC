@@ -28,12 +28,12 @@ RE3HDC tutorials Resources
 ===================
 - [getting_started with RCEHDC](?)
 - The RCD_E3HDC [examples repository](https://github.com/RE3HDC/examples)  
--  [E3HDC encoding](./_encoding.md)
--  [RE3HDC architetcure and pipelining](./hardware_over.md)
--  [E3HDC hardware structure and paramiter generating](./hardware_param.md)
+-  [RCEHDC encoding](./_encoding.md)
+-  [RCEHDC architetcure and pipelining](./hardware_over.md)
+-  [RCEHDC hardware structure and paramiter generating](./hardware_param.md)
 -  [hardware description modeling](./hardware_desc.md)
 -  [end_to_end_flow]
--  [source_code/RE3HDC]
+-  [source_code/RCEHDC]
 -  [List of publications](https://xilinx.github.io/RCD_E3HDC/publications)
 
 Task List
