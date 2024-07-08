@@ -12,6 +12,8 @@ The design is synthesized using the .tcl file suitable for Vivado. Since all of 
 
 Finally, the bitstream and hardware-handoff are saved in the "release" folder.
 
+![blockdesign](../figures/layout.png)
+
 To summarize, the hardware generation goes through the following steps:
 1. Training (optional)
 2. Generating memory files and HDC Configuration
