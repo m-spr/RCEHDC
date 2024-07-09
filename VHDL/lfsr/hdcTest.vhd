@@ -1,3 +1,25 @@
+-- MIT License
+
+-- Copyright (c) 2024 m-spr
+
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+
+-- The above copyright notice and this permission notice shall be included in all
+-- copies or substantial portions of the Software.
+
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
@@ -7,7 +29,7 @@ use ieee.std_logic_textio.all;
 
 ENTITY OTFGEn IS
     GENERIC
-    (	 pixbit		:INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
+    (	 inbit		:INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
         d           : INTEGER := 2000; -- dimension size
         lgf         : INTEGER := 10; -- bit width out popCounters --- LOG2(#feature)
         c           : INTEGER := 10; ---- #Classes
@@ -26,7 +48,7 @@ ENTITY OTFGEn IS
         clk		    : IN STD_LOGIC; 
         rstl		    : IN STD_LOGIC; 
         run         : IN STD_LOGIC;
-        pixel		: IN STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
+        pixel		: IN STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
         --update		: IN STD_LOGIC;		
         done        : OUT STD_LOGIC;
         TLAST_S, TVALID_S, ready_M       : OUT STD_LOGIC;
@@ -143,7 +165,7 @@ signal encoderTodiv : std_logic_vector ( adI*(2**n) - 1 DOWNTO 0);
 signal idLevelOut : std_logic_vector ( d - 1 DOWNTO 0);
 signal idLevelOutreg : std_logic_vector ( d - 1 DOWNTO 0);
 
-signal pixelreg		: STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
+signal pixelreg		: STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
         
 signal BV : std_logic_vector ( d - 1 DOWNTO 0);
 signal divToClass : std_logic_vector ( adI - 1 DOWNTO 0);
@@ -156,19 +178,19 @@ signal indexdatamem11 : STD_LOGIC_VECTOR(12 DOWNTO 0);
 file file_VECTORS : text;
 SIGNAL bvrst : std_logic;
 
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of pixel : signal is "TRUE";
-attribute MARK_DEBUG of BV : signal is "TRUE";
+-- attribute MARK_DEBUG : string;
+-- attribute MARK_DEBUG of pixel : signal is "TRUE";
+-- attribute MARK_DEBUG of BV : signal is "TRUE";
 --attribute MARK_DEBUG of pixelMemOutIndex : signal is "TRUE";
-attribute MARK_DEBUG of idLevelOut : signal is "TRUE";
-attribute MARK_DEBUG of rstpop : signal is "TRUE";
-attribute MARK_DEBUG of classIndex : signal is "TRUE";
-attribute MARK_DEBUG of indexdatamem11 : signal is "TRUE";
-attribute MARK_DEBUG of QHV : signal is "TRUE";
-attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
-attribute MARK_DEBUG of pointer : signal is "TRUE";
+-- attribute MARK_DEBUG of idLevelOut : signal is "TRUE";
+-- attribute MARK_DEBUG of rstpop : signal is "TRUE";
+-- attribute MARK_DEBUG of classIndex : signal is "TRUE";
+-- attribute MARK_DEBUG of indexdatamem11 : signal is "TRUE";
+-- attribute MARK_DEBUG of QHV : signal is "TRUE";
+-- attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
+-- attribute MARK_DEBUG of pointer : signal is "TRUE";
 --attribute MARK_DEBUG of divToClass : signal is "TRUE";
-attribute MARK_DEBUG of done : signal is "TRUE";
+-- attribute MARK_DEBUG of done : signal is "TRUE";
 --attribute MARK_DEBUG of encoderTodiv : signal is "TRUE";
 
 BEGIN
@@ -180,13 +202,6 @@ rstpop <= rstpop1 or rst;
 --pixelMemOutIndex <= indexdatamem;
 indexdatamem <=  indexdatamem11 & "00";
 
---inputReg : reg
---	GENERIC map(pixbit)   -- bit width out popCounters
---	PORT map(
---		clk , run, rst,
---		pixel,
---		pixelreg
---	);
 
 pop : 	popCount
 		GENERIC map(13)
@@ -198,18 +213,11 @@ pop : 	popCount
 bvrst <= rst OR doneEncoderToClassifier or rstpop;
 	
     idGen: idLevel3
-    GENERIC map(pixbit, x, r, d)
+    GENERIC map(inbit, x, r, d)
 	Port map( pixel, ---- pixelreg,
            idLevelOut
     );
     
---idGenreg : reg
---	GENERIC map(d )   -- bit width out popCounters
---	PORT map(
---		clk , run, rst,
---		idLevelOut,
---		idLevelOutreg
---	);
 
 	BVGen: BasedVectorLFSR
 	GENERIC map( d)
@@ -228,19 +236,6 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 		QHV
 	);
 
---	div: hvTOcompIn
---    GENERIC MAP
---    (
---        adI*(2**n), n, adI
---	)
---    PORT map
---    (
---        clk, rst,
---        encoderTodiv,
---        pointer,
---        divToClass
---    );
-
 	cls: classifier
 	GENERIC map ( adI*(2**n), c, n, adI, adz, zComp ,lgCn, logn)
 	PORT map(
@@ -250,14 +245,4 @@ bvrst <= rst OR doneEncoderToClassifier or rstpop;
 		classIndex
 	);
 
---    regTLAST_S : regOne 
---	GENERIC MAP('0')
---	PORT MAP(
---		clk , done, rst, done, TLAST_S  
---	);
---    regTVALID_S : regOne 
---	GENERIC MAP('0')
---	PORT MAP(
---		clk , done, rst, done, TVALID_S  
---	);
 End architecture;
