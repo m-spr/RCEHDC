@@ -34,7 +34,7 @@ RCEHDC tutorials Resources
 - [hardware description modeling](/docs/hardware_desc.md)
 - [end_to_end flow](/docs/end_to_end.md)
 - [HDC IP Implementation on PYNQ-Z2 Board](/docs/HDC_ON_PYNQ.md)
-- [supported models](/docs/hardware_folder.md)
+- [short video discription](https://youtu.be/Qy-5P8Cc5Es)
 - [list of publications](/docs/publications.md)
 
 Task List
