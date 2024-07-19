@@ -117,7 +117,6 @@ ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 ipx::save_core [ipx::current_core]
 update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports
-#save_bd_design
 ipx::merge_project_changes files [ipx::current_core]
 
 puts DONE
@@ -132,19 +131,22 @@ create_bd_design "design_1"
 
 update_compile_order -fileset sources_1
 
-startgroup
-create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0       
-endgroup
-delete_bd_objs [get_bd_cells fulltopHDC_0]  
+#startgroup
+#create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0       
+#endgroup
+#delete_bd_objs [get_bd_cells fulltopHDC_0]  
+
 
 startgroup
 create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0
 endgroup
 apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" }  [get_bd_cells processing_system7_0]
 
+
 startgroup
 create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0
 endgroup
+
 
 # remember to make them 8 bits
 
@@ -228,11 +230,11 @@ set_property -dict [list CONFIG.FREQ_HZ [expr int($FREQ_MHZ*1000000)]] [get_bd_i
 
 
 startgroup
-set_property -dict [list CONFIG.pixbit {%d} CONFIG.d {%d} CONFIG.lgf {%d} CONFIG.c {%d} CONFIG.featureSize {%d} CONFIG.n {%d} CONFIG.adI {%d} CONFIG.adz {%d} CONFIG.zComp {%d} CONFIG.lgCn {%d} CONFIG.logn {%d} CONFIG.r {%d} CONFIG.x {%d}] [get_bd_cells fulltopHDC_0]
+set_property -dict [list CONFIG.inbit {%d} CONFIG.dimension {%d} CONFIG.logfeature {%d} CONFIG.classes {%d} CONFIG.featureSize {%d} CONFIG.classMemSize {%d} CONFIG.confCompNum {%d} CONFIG.rsaZeropadding {%d} CONFIG.comparatorZeroPadding {%d} CONFIG.logClasses {%d} CONFIG.logn {%d} CONFIG.IDreminder {%d} CONFIG.IDcoefficient {%d} CONFIG.lenTKEEP_M {%d} CONFIG.lenTDATA_S {%d} CONFIG.lenTKEEP_S {%d}] [get_bd_cells fulltopHDC_0]
 endgroup
 
 if { $SPARSITY > 0 } {
-  set_property -dict [list CONFIG.sparse [expr int($SPARSITY)]] [get_bd_cells fulltopHDC_0]
+  set_property -dict [list CONFIG.pruning [expr int($SPARSITY)]] [get_bd_cells fulltopHDC_0]
 }
 
 regenerate_bd_layout

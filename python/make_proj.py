@@ -125,11 +125,11 @@ with open(PROJECT_DIR+"hdc_config.json", "w") as f:
 
 if LFSR:
     import lfsr_template as template
-    shutil.copy(args.project_dir+"/connector.vhd", HDC_DIR+"/lfsr_sparse/connector.vhd")
     if SPARSE:
+        shutil.copy(args.project_dir+"/connector.vhd", HDC_DIR+"/lfsr_sparse/connector.vhd")
         ENCODING = "lfsr_sparse"
         SOURCEFILES= (
-        HDC_DIR+"/lfsr_sparse/BasedVectorLFSR.vhd "
+        HDC_DIR +"/lfsr_sparse/BasedVectorLFSR.vhd "
         +HDC_DIR+"/lfsr_sparse/classifier.vhd "
         +HDC_DIR+"/lfsr_sparse/comparator.vhd "
         +HDC_DIR+"/lfsr_sparse/comparatorTop.vhd "
@@ -141,7 +141,7 @@ if LFSR:
         +HDC_DIR+"/lfsr_sparse/confComp.vhd "
         +HDC_DIR+"/lfsr_sparse/fulltop.vhd "
         +HDC_DIR+"/lfsr_sparse/hdcTest.vhd "
-        +HDC_DIR+"/lfsr_sparse/hvTOcompIn.vhd "
+        # +HDC_DIR+"/lfsr_sparse/hvTOcompIn.vhd " #deprecated
         +HDC_DIR+"/lfsr_sparse/id_level.vhd "
         +HDC_DIR+"/lfsr_sparse/popCount.vhd "
         +HDC_DIR+"/lfsr_sparse/recMux.vhd "
@@ -155,8 +155,8 @@ if LFSR:
         +HDC_DIR+"/lfsr_sparse/connector.vhd")
     else:
         ENCODING = "lfsr"
-        SOURCEFILES= (HDC_DIR
-        +"/lfsr/BasedVectorLFSR.vhd "
+        SOURCEFILES= (
+        HDC_DIR +"/lfsr/BasedVectorLFSR.vhd "
         +HDC_DIR+"/lfsr/classifier.vhd "
         +HDC_DIR+"/lfsr/comparator.vhd "
         +HDC_DIR+"/lfsr/comparatorTop.vhd "
@@ -168,7 +168,7 @@ if LFSR:
         +HDC_DIR+"/lfsr/fullconfComp.vhd "
         +HDC_DIR+"/lfsr/fulltop.vhd "
         +HDC_DIR+"/lfsr/hdcTest.vhd "
-        +HDC_DIR+"/lfsr/hvTOcompIn.vhd "
+        # +HDC_DIR+"/lfsr/hvTOcompIn.vhd " #deprecated
         +HDC_DIR+"/lfsr/id_level.vhd "
         +HDC_DIR+"/lfsr/popCount.vhd "
         +HDC_DIR+"/lfsr/recMux.vhd "
@@ -182,8 +182,8 @@ if LFSR:
 else:
     import bv_template as template
     ENCODING = "base_level"
-    SOURCEFILES= (HDC_DIR
-    +"/base_level/BasedVectorLFSR.vhd "
+    SOURCEFILES= (
+    HDC_DIR +"/base_level/BasedVectorLFSR.vhd "
     +HDC_DIR+"/base_level/BV_mem.vhd "
     +HDC_DIR+"/base_level/classifier.vhd "
     +HDC_DIR+"/base_level/comparator.vhd "
@@ -196,7 +196,7 @@ else:
     +HDC_DIR+"/base_level/fullconfComp.vhd "
     +HDC_DIR+"/base_level/fulltop.vhd "
     +HDC_DIR+"/base_level/hdcTest.vhd "
-    +HDC_DIR+"/base_level/hvTOcompIn.vhd "
+    # +HDC_DIR+"/base_level/hvTOcompIn.vhd " #deprecated
     +HDC_DIR+"/base_level/id_level.vhd "
     +HDC_DIR+"/base_level/popCount.vhd "
     +HDC_DIR+"/base_level/recMux.vhd "
@@ -287,7 +287,10 @@ create_bd = (template.create_block_design % (hdc_config["sparsity"],
                                              hdc_config["lgCn"],
                                              hdc_config["logn"],
                                              hdc_config["remainder"],
-                                             hdc_config["x"]
+                                             hdc_config["x"],
+                                             1, #tkeep_m
+                                             8, #tdata
+                                             1 #tkeep_s
                                              )).encode('utf-8')
 process.stdin.write(create_bd)
 process.stdin.flush()
@@ -315,6 +318,8 @@ read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/impl_1/runme.log"
 # write_log(log, "launch_impl completed successfully", "launch_impl failed")
 # log.close()
 
+#Need to wait a few seconds for vivado to properly finish writing all files
+#TODO: Improve this by waiting for some other response
 time.sleep(10)
 print("8. Generate Bitstream")
 os.makedirs(args.project_dir+"release", exist_ok=True)
@@ -328,6 +333,7 @@ process.stdin.flush()
 read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/impl_1/runme.log", "write_bitstream completed successfully", "write_bitstream failed", "write bitstream")
 
 #Need to wait a few seconds for vivado to properly finish writing all files
+#TODO: Improve this by waiting for some other response
 time.sleep(10)
 print("9. Preparing Driver")
 log = open(args.project_dir+"prepare_driver.log", "w")
