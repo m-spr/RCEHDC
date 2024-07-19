@@ -107,7 +107,7 @@ COMPONENT regOne IS
 END COMPONENT;
         
 signal pixelIn		: STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
-signal classIndex  : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+signal classIndex  : STD_LOGIC_VECTOR(logClasses - 1 DOWNTO 0);
 
 signal rstl, run, done : STD_LOGIC;
 signal outreg0 : std_logic_vector (31 DOWNTO 0):= (others =>'0');
@@ -137,7 +137,7 @@ BEGIN
     HDCOTFGEn: OTFGEn 
     GENERIC MAP
     (	 
-    inbit, d, logfeature, classes, featureSize, classMemSize, confCompNum, rsaZeropadding, comparatorZeroPadding, logClasses, logn, IDreminder, IDcoefficient )
+    inbit, dimension, logfeature, classes, featureSize, classMemSize, confCompNum, rsaZeropadding, comparatorZeroPadding, logClasses, logn, IDreminder, IDcoefficient )
     PORT MAP
     (
         clk, rst, run, 

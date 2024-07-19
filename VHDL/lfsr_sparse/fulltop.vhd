@@ -138,7 +138,7 @@ BEGIN
     HDCOTFGEn: OTFGEn 
     GENERIC MAP
     (	 
-    inbit, d,pruning, logfeature, classes, featureSize, classMemSize, confCompNum, rsaZeropadding, comparatorZeroPadding, logClasses, logn, IDreminder, IDcoefficient 
+    inbit, dimension,pruning, logfeature, classes, featureSize, classMemSize, confCompNum, rsaZeropadding, comparatorZeroPadding, logClasses, logn, IDreminder, IDcoefficient 
 	)
     PORT MAP
     (
