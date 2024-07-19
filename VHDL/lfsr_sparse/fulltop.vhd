@@ -42,10 +42,10 @@ ENTITY fulltopHDC IS
         logClasses        : INTEGER := 4; -- ceiling[LOG2(classes)]
 		logn        : INTEGER := 2; -- ceilingLOG2(#popCounters OR adI)
 		IDreminder           : INTEGER := 232;                  -- Remainder value for ID-level
-	    IDcoefficient           : INTEGER := 3 -- The coefficient of ID-level
+	    IDcoefficient           : INTEGER := 3; -- The coefficient of ID-level
 		lenTKEEP_M			:INTEGER := 1;
 		lenTDATA_S			:INTEGER := 8;
-		lenTKEEP_S			:INTEGER := 1;
+		lenTKEEP_S			:INTEGER := 1
 	);
     PORT
     (
