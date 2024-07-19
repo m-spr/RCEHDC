@@ -115,7 +115,7 @@ signal outreg0 : std_logic_vector (31 DOWNTO 0):= (others =>'0');
 signal pixelreg		: STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
   
 
-CONSTANT ALLZERO := STD_LOGIC_VECTOR(lenTDATA_S-logClasses-1 DOWNTO 0);
+CONSTANT ALLZERO : STD_LOGIC_VECTOR(lenTDATA_S-logClasses-1 DOWNTO 0):= (others =>'0');
 
 TYPE state IS  (init,  registering);
 SIGNAL ns,  ps : state;
