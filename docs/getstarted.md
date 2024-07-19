@@ -7,11 +7,12 @@ Python 3.10<br>
 Conda / Miniconda (recommended)<br>
 
 Setup steps:<br>
-1. Create a new conda environment: conda create --name rcehdc python=3.10.12<br>
-2. conda activate rcehdc<br>
-3. Run: ./setup.sh<br>
+1. Clone the repository
+2. Create a new conda environment: conda create --name rcehdc python=3.10.12<br>
+3. conda activate rcehdc<br>
+4. Run: ./setup.sh<br>
 The required python packages should now be installed for the environment.<br>
-4. Set the path and version of your vivado installation in "run_hdcgen.sh"
+5. Set the path and version of your vivado installation in "run_hdcgen.sh"
 
 Test your installation by running: run_hdcgen.sh mnist_example/.<br>
 You can find the generated .bit and .hwh file in the "release" folder of the directory.<br>

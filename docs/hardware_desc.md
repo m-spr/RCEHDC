@@ -6,7 +6,7 @@ To achieve a generic or recursive coding structure, processing distribution must
 
 In the following, a few samples of the madules are discribed.
 
-### Top Module: !!!!!name!!!!!
+### Top Module:
 
 The top module, `hdctest.vhd`, serves as the primary entry point for our hardware accelerator. All the configurations related to the problem size are set in the generic parameters of this module. It controls the interaction between the various sub-modules and manages the entire control flow.
 

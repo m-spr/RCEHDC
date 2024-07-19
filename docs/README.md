@@ -3,10 +3,10 @@
 Welcome to the RCEHDC documentation!
 =====================================
 
-The reconfigurable Energy Efficient Encoding HDC (RCEHDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
+The Resource-Constrained Edge HDC (RCEHDC) is a framework dedicated to mapping *Hyperdimensional Computing* (HDC) also known as *binary Vector Symbolic Architectures* (VSA) to FPGA.
 The RCEHDC project is an experimental framework for the implementation of HDC on Xilinx FPGA boards. The main components of RCEHDC are shown in the figure below and can be described as follows:
 
-![overview](../figures/overview.png){:width="300px";}
+![overview](../figures/overview.png)
 
 
 - **End-to-End Framework**
@@ -24,22 +24,25 @@ The RCEHDC project is an experimental framework for the implementation of HDC on
 
 [^1]: [Torchhd](https://github.com/torchhd)
 
-RE3HDC tutorials Resources
+RCEHDC tutorials Resources
 ===================
-- [getting_started with RCEHDC](./docs/getstarted.md)
-- [RCEHDC examples repository](./mnist_example)  
-- [RCEHDC encoding](./_encoding.md)
-- [RCEHDC architetcure and pipelining](./hardware_over.md)
-- [RCEHDC hardware structure and paramiter generating](./hardware_param.md)
-- [hardware description modeling](./hardware_desc.md)
-- [end_to_end_flow](./end_to_end.md)
-- [List of publications](https://xilinx.github.io/RCD_E3HDC/publications)
+- [getting_started with RCEHDC](/docs/getstarted.md)
+- [RCEHDC examples repository](/mnist_example)  
+- [RCEHDC encoding](/docs/_encoding.md)
+- [RCEHDC architetcure and pipelining](/docs/hardware_over.md)
+- [RCEHDC hardware structure and paramiter generating](/docs/hardware_param.md)
+- [hardware description modeling](/docs/hardware_desc.md)
+- [end_to_end flow](/docs/end_to_end.md)
+- [HDC IP Implementation on PYNQ-Z2 Board](/docs/HDC_ON_PYNQ.md)
+- [short video discription](https://youtu.be/Qy-5P8Cc5Es)
+- [list of publications](/docs/publications.md)
 
 Task List
 ------------
 - [ ] add random projection and permitation encodings
 - [ ] add more boards options to tcl
 - [ ] add non-bainary classification support
+- [ ] modify the TKEEP signal
 
 If you are using our framework, please cite:
 ```

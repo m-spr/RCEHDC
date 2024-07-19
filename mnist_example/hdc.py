@@ -1,6 +1,6 @@
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision
 from torchvision.datasets import MNIST
 
@@ -8,19 +8,19 @@ from torchvision.datasets import MNIST
 import torchmetrics
 from tqdm import tqdm
 
-import torchhd
-from torchhd.models import Centroid
+from torchhd import bind, multiset, MAPTensor
 from torchhd import embeddings
+
+import pathlib
+path = str(pathlib.Path(__file__).parent.resolve())
+
+import quant_models
 
 import math
 
 import numpy as np
 import random
 import sys
-import os
-
-import pathlib
-path = str(pathlib.Path(__file__).parent.resolve())
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(threshold=sys.maxsize)
@@ -95,7 +95,7 @@ class Encoder(nn.Module):
             
             levels.append(my_list)
         arr = np.array(levels)
-        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
+        tArr = torch.nn.Parameter(MAPTensor(torch.from_numpy(arr).float()))
         self.value.weight = tArr.float()
 
         self.init_num = random.randint(1, 2**out_features)
@@ -108,14 +108,14 @@ class Encoder(nn.Module):
         sequence_length = size * size
         self.generated_sequence = lfsr.generate_sequence(sequence_length)
         arr = np.array(self.generated_sequence)
-        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
+        tArr = torch.nn.Parameter(MAPTensor(torch.from_numpy(arr).float()))
         self.position.weight = tArr.float()
     
 
     def forward(self, x):
         x = self.flatten(x)
-        sample_hv = torchhd.bind(self.position.weight, self.value(x))
-        sample_hv = torchhd.multiset(sample_hv)
+        sample_hv = bind(self.position.weight, self.value(x))
+        sample_hv = multiset(sample_hv)
         positive = torch.tensor(1.0, dtype=sample_hv.dtype, device=sample_hv.device)
         negative = torch.tensor(-1.0, dtype=sample_hv.dtype, device=sample_hv.device)
         return torch.where(sample_hv > 0, positive, negative)
@@ -124,7 +124,7 @@ encode = Encoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
 encode = encode.to(device)
 
 num_classes = len(train_ds.classes)
-model = Centroid(DIMENSIONS, num_classes)
+model = quant_models.Centroid(DIMENSIONS, num_classes)
 model = model.to(device)
 
 def train():
@@ -140,18 +140,12 @@ def test():
     accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)
     model.normalize(quantize=True)
     with torch.no_grad():
-        print_flag = 1
         count = 0
         for samples, labels in tqdm(test_ld, desc="Testing"):
             count = count + 1
-            if count %850 == 0:
-                print_flag = 1
-            else:
-                print_flag = 0
             samples = samples.to(device)
             samples_hv = encode(samples)
-            outputs = model(samples_hv, dot=True)
-            #if print_flag == 1:
+            outputs = model.forward(samples_hv, dot=True)
             accuracy.update(outputs.cpu(), labels)
 
     print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
