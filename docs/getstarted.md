@@ -14,7 +14,8 @@ Setup steps:<br>
 The required python packages should now be installed for the environment.<br>
 5. Set the path and version of your vivado installation in "run_hdcgen.sh"
 
-Test your installation by running: run_hdcgen.sh mnist_example/.<br>
+Test your installation by running: ./
+run_hdcgen.sh mnist_example/.<br>
 You can find the generated .bit and .hwh file in the "release" folder of the directory.<br>
 A python notebook for loading the overlay on PYNQ can also be found in the folder "mnist_examples/".
 
