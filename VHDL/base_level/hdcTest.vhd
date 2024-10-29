@@ -18,8 +18,8 @@ ENTITY OTFGEn IS
         zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
         lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
 		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
-		r           : INTEGER := 2;                  -- remainder from division for ID level
-	    x           : INTEGER := 1 -- coefficient of IDLEVEL
+		log2features  : INTEGER := 2; --log2 of feature size
+	    log2id 		: INTEGER := 1 --log2 of idlevel
 	);
     PORT
     (
@@ -60,16 +60,16 @@ COMPONENT popCount IS
 component blk_mem_gen_BV IS
   PORT (
     clka : IN STD_LOGIC;
-    addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(999 DOWNTO 0)
+    addra : IN STD_LOGIC_VECTOR(log2features-1 DOWNTO 0);
+    douta : OUT STD_LOGIC_VECTOR(d-1 DOWNTO 0)
   );
 end component;
 
 component blk_mem_gen_ID IS
   PORT (
     clka : IN STD_LOGIC;
-    addra : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(999 DOWNTO 0)
+    addra : IN STD_LOGIC_VECTOR(log2id-1 DOWNTO 0);
+    douta : OUT STD_LOGIC_VECTOR(d-1 DOWNTO 0)
   );
 end component;
 

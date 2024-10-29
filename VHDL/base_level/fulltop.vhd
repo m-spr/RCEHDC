@@ -18,23 +18,26 @@ ENTITY fulltopHDC IS
         zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
         lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
 		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
-		r           : INTEGER := 232;                  -- remainder from division for ID level
-		x           : INTEGER := 3 -- coefficient of IDLEVEL
+		log2features  : INTEGER := 2; --log2 of feature size
+	    log2id : INTEGER := 1; --log2 of id level
+		lenTKEEP_M			:INTEGER := 1;
+		lenTDATA_S			:INTEGER := 8;
+		lenTKEEP_S			:INTEGER := 1
 	);
     PORT
     (
         clk		    : IN STD_LOGIC; 
         rst		    : IN STD_LOGIC; 
         TVALID_M         : IN STD_LOGIC;         
-        TDATA_M		: IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-        TKEEP_M		: IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        TDATA_M		: IN STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
+        TKEEP_M		: IN STD_LOGIC_VECTOR(lenTKEEP_M-1 DOWNTO 0);
         TREADY_S        : IN STD_LOGIC;   
         TLAST_M        : IN STD_LOGIC;    
         TREADY_M        : OUT STD_LOGIC;    -- should be always '1' as of now! for DMA only
         TVALID_S         : OUT STD_LOGIC;         
         TLAST_S         : OUT STD_LOGIC;         
-        TDATA_S  : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-        TKEEP_S  : OUT STD_LOGIC_VECTOR(0 DOWNTO 0)
+        TDATA_S  : OUT STD_LOGIC_VECTOR(lenTDATA_S-1 DOWNTO 0);
+        TKEEP_S  : OUT STD_LOGIC_VECTOR(lenTKEEP_S-1 DOWNTO 0)
     );
 END ENTITY fulltopHDC;
 
@@ -53,8 +56,8 @@ component OTFGEn IS
         zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
         lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
 		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
-		r           : INTEGER := 2;                  -- remainder from division for ID level
-		x           : INTEGER := 1 -- coefficient of IDLEVEL
+		log2features  : INTEGER := 2; --log2 of feature size
+	    log2id : INTEGER := 1 --log2 of idlevel
 	);
     PORT
     (
@@ -110,7 +113,7 @@ BEGIN
     HDCOTFGEn: OTFGEn 
     GENERIC MAP
     (	 
-    pixbit, d, lgf, c, featureSize, n, adI, adz, zComp, lgCn, logn, r ,x  
+    pixbit, d, lgf, c, featureSize, n, adI, adz, zComp, lgCn, logn, log2features, log2id  
 	)
     PORT MAP
     (

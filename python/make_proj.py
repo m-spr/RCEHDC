@@ -12,6 +12,7 @@ import genMem
 from glob import glob
 import time
 import shutil
+import numpy as np
 
 parser = argparse.ArgumentParser(description="Make Vivado project")
 parser.add_argument("vivado_path", type=str, nargs='?', default="", help="Path to Vivado")
@@ -182,9 +183,11 @@ if LFSR:
 else:
     import bv_template as template
     ENCODING = "base_level"
+    hdc_config["remainder"] = np.ceil(np.log2(DIMENSIONS))
+    hdc_config["x"] = np.ceil(np.log2(NUM_LEVELS))
     SOURCEFILES= (
-    HDC_DIR +"/base_level/BasedVectorLFSR.vhd "
-    +HDC_DIR+"/base_level/BV_mem.vhd "
+    #HDC_DIR +"/base_level/BasedVectorLFSR.vhd "
+    HDC_DIR+"/base_level/BV_mem.vhd "
     +HDC_DIR+"/base_level/classifier.vhd "
     +HDC_DIR+"/base_level/comparator.vhd "
     +HDC_DIR+"/base_level/comparatorTop.vhd "
@@ -228,8 +231,10 @@ for cmd in cmds:
 print("3. Create Vivado project")
 #Prepare log file
 log = open(args.project_dir+"create_project.log", "w")
-create_project = (template.create_project_tcl_template % (PROJECT_NAME, PROJECT_DIR, BOARD, CHVS, HDC_DIR, SOURCEFILES, ENCODING, VIVADO_VERSION, FREQ_MHZ)).encode('utf-8')
-process.stdin.write(create_project)
+create_project = (template.create_project_tcl_template % (PROJECT_NAME, PROJECT_DIR, BOARD, CHVS, HDC_DIR, SOURCEFILES, ENCODING, VIVADO_VERSION, FREQ_MHZ))
+with open(args.project_dir+"create_project.tcl", "w") as f:
+    f.write(create_project)
+process.stdin.write(create_project.encode('utf-8'))
 process.stdin.flush()
 
 write_log(log, "DONE", "failed")
@@ -245,26 +250,34 @@ with open(args.project_dir+'mem/configSignature.txt', 'r') as f:
 with open(args.project_dir+'mem/configInitialvalues.txt', 'r') as f:
     init = f.readline()
 if LFSR:
-    create_ip = (template.create_ip_tcl_template % (signature, init)).encode('utf-8')
-    process.stdin.write(create_ip)
+    create_ip = (template.create_ip_tcl_template % (signature, init))
+    with open(args.project_dir+"create_ip.tcl", "w") as f:
+        f.write(create_ip)
+    process.stdin.write(create_ip.encode('utf-8'))
     process.stdin.flush()
     write_log(log, "DONE", "failed")
     log.close()
 else:
-    create_ip = (template.create_ip_tcl_template % (FEATURES, DIMENSIONS, NUM_LEVELS)).encode('utf-8')
-    process.stdin.write(create_ip)
+    create_ip = (template.create_ip_tcl_template % (FEATURES, DIMENSIONS, NUM_LEVELS))
+    with open(args.project_dir+"create_ip.tcl", "w") as f:
+        f.write(create_ip)
+    process.stdin.write(create_ip.encode('utf-8'))
     process.stdin.flush()
     write_log(log, "DONE", "failed")
     log.close()
 
-    create_ip = (template.insert_block_mem).encode('utf-8')
-    process.stdin.write(create_ip)
+    create_ip = (template.insert_block_mem)
+    with open(args.project_dir+"create_ip.tcl", "a") as f:
+        f.write(create_ip)
+    process.stdin.write(create_ip.encode('utf-8'))
     process.stdin.flush()
     read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/blk_mem_gen_ID_synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "block memory generation")
     
     log = open(args.project_dir+"repackage_ip.log", "w")
-    repackage_ip = (template.repackage_ip).encode('utf-8')
-    process.stdin.write(repackage_ip)
+    repackage_ip = (template.repackage_ip)
+    with open(args.project_dir+"create_ip.tcl", "a") as f:
+        f.write(repackage_ip)
+    process.stdin.write(repackage_ip.encode('utf-8'))
     process.stdin.flush()
     write_log(log, "DONE", "failed")
     log.close()
@@ -291,8 +304,12 @@ create_bd = (template.create_block_design % (hdc_config["sparsity"],
                                              1, #tkeep_m
                                              8, #tdata
                                              1 #tkeep_s
-                                             )).encode('utf-8')
-process.stdin.write(create_bd)
+                                             # tkeep and tdata need to be adjusted for different datasets
+                                             ))
+with open(args.project_dir+"create_bd.tcl", "w") as f:
+        f.write(create_bd)
+
+process.stdin.write(create_bd.encode('utf-8'))
 process.stdin.flush()
 
 write_log(log, "DONE", "failed")
@@ -300,8 +317,10 @@ log.close()
 
 print("6. Run Synthesis")
 # log = open(args.project_dir+"run_synthesis.log", "w")
-launch_synth = template.launch_synth.encode('utf-8')
-process.stdin.write(launch_synth)
+launch_synth = template.launch_synth
+with open(args.project_dir+"launch_synth.tcl", "w") as f:
+        f.write(create_bd)
+process.stdin.write(launch_synth.encode('utf-8'))
 process.stdin.flush()
 read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "synthesis")
 
@@ -310,8 +329,10 @@ read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/synth_1/runme.log
 
 print("7. Run Implementation")
 # log = open(args.project_dir+"launch_implementation.log", "w")
-launch_impl = template.launch_impl.encode('utf-8')
-process.stdin.write(launch_impl)
+launch_impl = template.launch_impl
+with open(args.project_dir+"launch_synth.tcl", "w") as f:
+        f.write(launch_impl)
+process.stdin.write(launch_impl.encode('utf-8'))
 process.stdin.flush()
 read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/impl_1/runme.log", "report_power completed successfully", "phys_opt_design failed", "implementation")
 
@@ -324,8 +345,10 @@ time.sleep(10)
 print("8. Generate Bitstream")
 os.makedirs(args.project_dir+"release", exist_ok=True)
 # log = open(args.project_dir+"generate_bitstream.log", "w")
-generate_bitstream = template.generate_bitstream.encode('utf-8')
-process.stdin.write(generate_bitstream)
+generate_bitstream = template.generate_bitstream
+with open(args.project_dir+"generate_bitstream.tcl", "w") as f:
+        f.write(generate_bitstream)
+process.stdin.write(generate_bitstream.encode('utf-8'))
 process.stdin.flush()
 
 # write_log(log, "write_bitstream completed successfully", "write_bitstream failed")
@@ -337,8 +360,10 @@ read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/impl_1/runme.log"
 time.sleep(10)
 print("9. Preparing Driver")
 log = open(args.project_dir+"prepare_driver.log", "w")
-prepare_driver = template.prepare_driver.encode('utf-8')
-process.stdin.write(prepare_driver)
+prepare_driver = template.prepare_driver
+with open(args.project_dir+"prepare_driver.tcl", "w") as f:
+        f.write(prepare_driver)
+process.stdin.write(prepare_driver.encode('utf-8'))
 process.stdin.flush()
 write_log(log, "DONE", "failed")
 log.close()

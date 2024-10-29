@@ -6,7 +6,7 @@
     "FEATURES"      : 784,
     "NUM_LEVELS"    : 256,
     "NUM_CLASSES"   : 10,
-    "SPARSE"        : true,
+    "SPARSE"        : false,
     "BOARD"         :"PYNQ-Z2",
     "PROJECT_NAME"  :"test"
 }
