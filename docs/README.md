@@ -46,6 +46,17 @@ Task List
 
 If you are using our framework, please cite:
 ```
+@inproceedings{roodsari20243,
+  title={E 3 HDC: Energy Efficient Encoding for Hyper-Dimensional Computing on Edge Devices},
+  author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Meyers, Vincent and Tahoori, Mehdi},
+  booktitle={2024 34th International Conference on Field-Programmable Logic and Applications (FPL)},
+  pages={274--280},
+  year={2024},
+  organization={IEEE}
+}
+```
+If you are using the encoder, please cite:
+```
 @inproceedings{roodsari2024otfgencoder,
   title={OTFGEncoder-HDC: Hardware-efficient Encoding Techniques for Hyperdimensional Computing},
   author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Tahoori, Mehdi},
