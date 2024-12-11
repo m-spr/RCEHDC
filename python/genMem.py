@@ -34,18 +34,22 @@ def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding,
             with open(path+'mem/sparse/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
-def write_memory(path, dimensions, levels):
-    XORs     = torch.load(path+"model/xors.pt")
+def write_memory(path, dimensions, levels, lfsr=True):
     position = torch.load(path+"model/sequence.pt")
+    #memory specific to LFSR encoding
+    if lfsr:
+        XORs     = torch.load(path+"model/xors.pt")
 
-    strXors = ""
-    for i in range(dimensions):
-        if i in XORs :
-              strXors = strXors + '1'
-        else:
-              strXors = strXors + '0'
-    with open(path+'mem/configSignature.txt', 'w') as output:
-        output.write(str(strXors[::-1]))
+        strXors = ""
+        for i in range(dimensions):
+            if i in XORs :
+                strXors = strXors + '1'
+            else:
+                strXors = strXors + '0'
+        with open(path+'mem/configSignature.txt', 'w') as output:
+            output.write(str(strXors[::-1]))
+    
+    #general memory file (sequence in LFSR is position in BV)
     weight_mem = []
     for ini in position:
         strinit2 = ""
@@ -55,9 +59,10 @@ def write_memory(path, dimensions, levels):
             else :
                 strinit2 = strinit2 + '1'
         weight_mem.append(strinit2)
-    #strinit = weight_mem[0]
+
     with open(path+'mem/configInitialvalues.txt', 'w') as output:
         output.write(str(weight_mem[0]))
+            
     with open(path+'mem/BV_img.coe', 'w') as output:
         output.write("memory_initialization_radix=2;\n")
         output.write("memory_initialization_vector=\n")

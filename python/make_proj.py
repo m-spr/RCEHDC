@@ -118,7 +118,7 @@ else:
     #get all paths to the CHV memory files seperated by one empty space
     CHVS = ' '.join(glob(args.project_dir+"mem/normal/*.mif"))
 
-genMem.write_memory(args.project_dir, DIMENSIONS, NUM_LEVELS)
+genMem.write_memory(args.project_dir, DIMENSIONS, NUM_LEVELS, lfsr=LFSR)
 
 with open(PROJECT_DIR+"hdc_config.json", "w") as f:
     config = json.dump(hdc_config, f)
@@ -187,8 +187,8 @@ else:
     hdc_config["x"] = np.ceil(np.log2(NUM_LEVELS))
     SOURCEFILES= (
     #HDC_DIR +"/base_level/BasedVectorLFSR.vhd "
-    HDC_DIR+"/base_level/BV_mem.vhd "
-    +HDC_DIR+"/base_level/classifier.vhd "
+    # HDC_DIR+"/base_level/BV_mem.vhd " #this file is empty?
+    HDC_DIR+"/base_level/classifier.vhd "
     +HDC_DIR+"/base_level/comparator.vhd "
     +HDC_DIR+"/base_level/comparatorTop.vhd "
     +HDC_DIR+"/base_level/confCompCtrl.vhd "
