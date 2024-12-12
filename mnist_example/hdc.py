@@ -1,6 +1,6 @@
-
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision
 from torchvision.datasets import MNIST
 
@@ -8,19 +8,19 @@ from torchvision.datasets import MNIST
 import torchmetrics
 from tqdm import tqdm
 
-from torchhd import bind, multiset, MAPTensor
+import torchhd
+from quant_models import Centroid
 from torchhd import embeddings
-
-import pathlib
-path = str(pathlib.Path(__file__).parent.resolve())
-
-import quant_models
 
 import math
 
 import numpy as np
 import random
 import sys
+import os
+
+import pathlib
+path = str(pathlib.Path(__file__).parent.resolve())
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(threshold=sys.maxsize)
@@ -72,9 +72,9 @@ class LFSR:
             sequence.append(bipolarReg[::-1].copy())
         return sequence
 
-class Encoder(nn.Module):
+class LFSREncoder(nn.Module):
     def __init__(self, out_features, size, levels):
-        super(Encoder, self).__init__()
+        super(LFSREncoder, self).__init__()
         self.flatten = torch.nn.Flatten()
         self.position = embeddings.Random(size * size, out_features)
         self.value = embeddings.Level(levels, out_features, high=256)
@@ -95,7 +95,7 @@ class Encoder(nn.Module):
             
             levels.append(my_list)
         arr = np.array(levels)
-        tArr = torch.nn.Parameter(MAPTensor(torch.from_numpy(arr).float()))
+        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
         self.value.weight = tArr.float()
 
         self.init_num = random.randint(1, 2**out_features)
@@ -108,23 +108,38 @@ class Encoder(nn.Module):
         sequence_length = size * size
         self.generated_sequence = lfsr.generate_sequence(sequence_length)
         arr = np.array(self.generated_sequence)
-        tArr = torch.nn.Parameter(MAPTensor(torch.from_numpy(arr).float()))
+        tArr = torch.nn.Parameter(torchhd.MAPTensor(torch.from_numpy(arr).float()))
         self.position.weight = tArr.float()
     
 
     def forward(self, x):
         x = self.flatten(x)
-        sample_hv = bind(self.position.weight, self.value(x))
-        sample_hv = multiset(sample_hv)
+        sample_hv = torchhd.bind(self.position.weight, self.value(x))
+        sample_hv = torchhd.multiset(sample_hv)
         positive = torch.tensor(1.0, dtype=sample_hv.dtype, device=sample_hv.device)
         negative = torch.tensor(-1.0, dtype=sample_hv.dtype, device=sample_hv.device)
         return torch.where(sample_hv > 0, positive, negative)
 
-encode = Encoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
+class BaseLevelEncoder(torch.nn.Module):
+    def __init__(self, out_features, size, levels):
+        super(BaseLevelEncoder, self).__init__()
+        self.flatten = torch.nn.Flatten()
+        self.position = torchhd.embeddings.Random(size * size, out_features)
+        self.value = torchhd.embeddings.Level(levels, out_features)
+        self.name="BaseLevelEncoder"
+        
+    def forward(self, x):
+        x = self.flatten(x)
+        x = torchhd.bind(self.position.weight, self.value(x)).to(x.device)
+        x = torchhd.multiset(x)
+        return torchhd.hard_quantize(x)
+
+encode = LFSREncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
+# encode = BaseLevelEncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
 encode = encode.to(device)
 
 num_classes = len(train_ds.classes)
-model = quant_models.Centroid(DIMENSIONS, num_classes)
+model = Centroid(DIMENSIONS, num_classes)
 model = model.to(device)
 
 def train():
@@ -145,13 +160,15 @@ def test():
             count = count + 1
             samples = samples.to(device)
             samples_hv = encode(samples)
-            outputs = model.forward(samples_hv, dot=True)
+            outputs = model(samples_hv, dot=True)
+            #if print_flag == 1:
             accuracy.update(outputs.cpu(), labels)
 
     print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 
     torch.save(model.weight,                path+"/model/chvs.pt")
-    torch.save(encode.init_num,             path+"/model/init_num.pt")
-    torch.save(encode.XORs,                 path+"/model/xors.pt")
-    torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
+    torch.save(encode.position.weight,      path+"/model/sequence.pt")
+    # torch.save(encode.init_num,             path+"/model/init_num.pt")
+    # torch.save(encode.XORs,                 path+"/model/xors.pt")
+    # torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
 
