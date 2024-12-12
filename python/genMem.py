@@ -39,7 +39,6 @@ def write_memory(path, dimensions, levels, lfsr=True):
     #memory specific to LFSR encoding
     if lfsr:
         XORs     = torch.load(path+"model/xors.pt")
-
         strXors = ""
         for i in range(dimensions):
             if i in XORs :
@@ -69,12 +68,10 @@ def write_memory(path, dimensions, levels, lfsr=True):
         for i in weight_mem:
             output.write(i)
             output.write(",\n")
-        #output.write(";")
+            
     with open(path+'mem/BV_img.mif', 'w') as output:
         for i in weight_mem:
-            #output.write('"')
             output.write(i)
-            #output.write('"')
             output.write(",\n")
 
     c = int(math.floor(dimensions/levels))
