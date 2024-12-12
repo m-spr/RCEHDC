@@ -245,11 +245,11 @@ print("4. Generate IP for HDC")
 #Prepare log file
 log = open(args.project_dir+"create_ip.log", "w")
 #load initial values for LSFR
-with open(args.project_dir+'mem/configSignature.txt', 'r') as f:
-    signature = f.readline()
-with open(args.project_dir+'mem/configInitialvalues.txt', 'r') as f:
-    init = f.readline()
 if LFSR:
+    with open(args.project_dir+'mem/configSignature.txt', 'r') as f:
+        signature = f.readline()
+    with open(args.project_dir+'mem/configInitialvalues.txt', 'r') as f:
+        init = f.readline()
     create_ip = (template.create_ip_tcl_template % (signature, init))
     with open(args.project_dir+"create_ip.tcl", "w") as f:
         f.write(create_ip)
