@@ -210,9 +210,10 @@ apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_s
 apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK]
 endgroup
 
-connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_50M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_50M/peripheral_aresetn]
-
+#connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_50M/peripheral_aresetn]
+#connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_50M/peripheral_aresetn]
+connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins smartconnect_0/aresetn]
+connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
 startgroup
 set_property -dict [list \
   CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ [expr int($FREQ_MHZ)] \
