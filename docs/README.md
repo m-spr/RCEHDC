@@ -47,8 +47,8 @@ Task List
 Related Links
 -------------
 The following links provide access to the functional safety extensions for HDC, built on this framework.
-- [CED-HDC: Lightweight Concurrent Error Detection for Reliable Hyperdimensional Computing]()
-- [Non-Uniform Error Correction for Hyperdimensional Computing Edge Accelerators]()  
+- [CED-HDC: Lightweight Concurrent Error Detection for Reliable Hyperdimensional Computing](https://github.com/m-spr/CED-HDC)
+- [Non-Uniform Error Correction for Hyperdimensional Computing Edge Accelerators](https://github.com/m-spr/NUECC-HDC)  
 
 
 Citation
