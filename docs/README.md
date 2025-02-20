@@ -44,6 +44,16 @@ Task List
 - [ ] add non-bainary classification support
 - [ ] modify the TKEEP signal
 
+Related Links
+-------------
+The following links provide access to the functional safety extensions for HDC, built on this framework.
+- [CED-HDC: Lightweight Concurrent Error Detection for Reliable Hyperdimensional Computing]()
+- [Non-Uniform Error Correction for Hyperdimensional Computing Edge Accelerators]()  
+
+
+Citation
+------------
+The current implementation of the framework is based on the following publications. 
 If you are using our framework, please cite:
 ```
 @inproceedings{roodsari20243,
