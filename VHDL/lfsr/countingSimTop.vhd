@@ -98,12 +98,6 @@ SIGNAL point	: STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 attribute MARK_DEBUG : string;
 attribute MARK_DEBUG of CHV : signal is "TRUE";
 attribute MARK_DEBUG of CHV_TO_OUT : signal is "TRUE";
-attribute MARK_DEBUG of CHV_FROM_ECC_TO_OUT : signal is "TRUE";
-attribute MARK_DEBUG of CHV_TO_ECC : signal is "TRUE";
-attribute MARK_DEBUG of CHV_FROM_ECC : signal is "TRUE";
---attribute MARK_DEBUG of CHV_TO_OUT : signal is "TRUE";
-attribute DONT_TOUCH : string;
-attribute DONT_TOUCH of testmodules : label is "TRUE";
 
 begin
 
