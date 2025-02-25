@@ -124,7 +124,7 @@ begin
 
     concatECC: FOR I IN classNumber-1 DOWNTO 0 GENERATE
         classesECC: FOR k IN d-1 DOWNTO 0 GENERATE
-            CHV_TO_OUT(I)(k) <= CHV(I)(to_integer(unsigned(point)) + (2**n) * k);
+            CHV_TO_OUT(I)(k) <= CHV(I)(to_integer(unsigned(point)) + (2**(n-1)) * k);
         END GENERATE classesECC;
     END GENERATE concatECC;
 
