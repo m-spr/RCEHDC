@@ -34,24 +34,7 @@ def group_of_chvs(mem_size, number_of_confComp, zeropadding, path):
         zeros = '0'*zeropadding
         binOfEach = zeros + binOfEach
         bin_list.append(binOfEach)
-        
-    segments = [[] for _ in range(number_of_confComp)]    
-    segment_length = bin_list[0] / number_of_confComp
-    if mem_size != segment_length:
-        print( "CHV memory is not correct!")
-    for s in bin_list:
-        for i in range(number_of_confComp):
-            start = i * segment_length
-            end = start + segment_length
-            segments[i].append(s[start:end])
 
-    # Write each segment to separate files
-    for i in range(number_of_confComp):
-        file_path = os.path.join(path+f'mem/normal/CHV_{i}.mif')
-        with open(file_path, "w") as f:
-            for segment in segments[i]:
-                f.write(segment + "\n")  # Write each segment on a new line
-    
     # Write all CHV memory in one file
     file_path = os.path.join(path+f'mem/normal/CHV_img.mif')
     with open(file_path, "w") as f:
