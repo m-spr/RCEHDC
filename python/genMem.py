@@ -21,6 +21,45 @@ def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
             with open(path+'mem/normal/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
+def group_of_chvs(mem_size, number_of_confComp, zeropadding, path):
+    chvs = torch.load(path+"/model/chvs.pt")
+    bin_list = []
+    for k in chvs:
+        binOfEach = ""
+        for s in k:
+                if s > 0:
+                        binOfEach = binOfEach+'1'
+                else:
+                        binOfEach = binOfEach+'0'
+        zeros = '0'*zeropadding
+        binOfEach = zeros + binOfEach
+        bin_list.append(binOfEach)
+        
+    segments = [[] for _ in range(number_of_confComp)]    
+    segment_length = bin_list[0] / number_of_confComp
+    if mem_size != segment_length:
+        print( "CHV memory is not correct!")
+    for s in bin_list:
+        for i in range(number_of_confComp):
+            start = i * segment_length
+            end = start + segment_length
+            segments[i].append(s[start:end])
+
+    # Write each segment to separate files
+    for i in range(number_of_confComp):
+        file_path = os.path.join(path+f'mem/normal/CHV_{i}.mif')
+        with open(file_path, "w") as f:
+            for segment in segments[i]:
+                f.write(segment + "\n")  # Write each segment on a new line
+    
+    # Write all CHV memory in one file
+    file_path = os.path.join(path+f'mem/normal/CHV_img.mif')
+    with open(file_path, "w") as f:
+        for classes in bin_list:
+            f.write(classes + "\n")  # Write each segment on a new line
+
+
+
 def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding, path):
     a = torch.load(path+"/model/chvs.pt")
     for k in range(len(a)):
@@ -41,9 +80,9 @@ def write_memory(path, dimensions, levels):
     strXors = ""
     for i in range(dimensions):
         if i in XORs :
-              strXors = strXors + '1'
+            strXors = strXors + '1'
         else:
-              strXors = strXors + '0'
+            strXors = strXors + '0'
     with open(path+'mem/configSignature.txt', 'w') as output:
         output.write(str(strXors[::-1]))
     weight_mem = []

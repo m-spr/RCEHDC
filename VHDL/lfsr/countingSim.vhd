@@ -35,6 +35,7 @@ ENTITY countingSim  IS
 		reg1Update, reg1rst, reg2Update, reg2rst   	: IN STD_LOGIC;				---- run shuld be always '1' during calculation --- ctrl ----
 		muxSel   	 	: IN  STD_LOGIC_VECTOR (logInNum DOWNTO 0);
 		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);
+		CHV        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);
 		pointer		 	: IN STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 		dout	 		: OUT  STD_LOGIC_VECTOR(n+logInNum-1 DOWNTO 0)
 	);
@@ -49,6 +50,7 @@ component fullconfComp  IS
 	PORT (
 		clk, rst, run, done  	: IN STD_LOGIC;				---- run shuld be always '1' during calculation --- ctrl ----
 		hv        		: IN  STD_LOGIC;
+		Chv_input       		: IN  STD_LOGIC; -- _vector ((2**n)-1 DOWNTO 0);
 		pointer		 	: IN STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 		sim		 		: OUT  STD_LOGIC_VECTOR(n-1 DOWNTO 0)
 	);
@@ -68,16 +70,19 @@ component RSA IS
 end component;
 
 SIGNAL sim : STD_LOGIC_VECTOR (((d)*n)- 1 DOWNTO 0);
+SIGNAL chv_to_fullconf : STD_LOGIC_VECTOR (1023 DOWNTO 0);
 attribute MARK_DEBUG : string;
+constant zesros : std_logic_vector (1023 - 999-1 downto 0):= (others =>'0');
 attribute MARK_DEBUG of sim : signal is "TRUE";
 attribute MARK_DEBUG of dout : signal is "TRUE";
+attribute MARK_DEBUG of CHV  : signal is "TRUE";
 begin
-
+--chv_to_fullconf <= zesros & chv;
 	compArr: FOR I IN d DOWNTO 1 GENERATE
 		comp : fullconfComp
 		GENERIC MAP(n, classNumber, I-1) ------- bayad ye array begiram!
 		PORT MAP(
-			clk, rst, run, done, hv(I-1),
+			clk, rst, run, done, hv(I-1),chv(I-1),  --,chv((2**n)*(I)-1 downto (2**n)*(I-1))
 			pointer,
 			sim	((I*n)- 1 DOWNTO ((I-1)*n))
 		);
@@ -91,5 +96,6 @@ begin
 		sim,
 		dout
 	);
+	
 
 end architecture;

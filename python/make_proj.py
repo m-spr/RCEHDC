@@ -114,6 +114,10 @@ else:
                                   hdc_config["adI"],
                                   (2**hdc_config["n"])*hdc_config["adI"] - DIMENSIONS,
                                   args.project_dir)
+    genMem.group_of_chvs(2**hdc_config["n"],
+                                  hdc_config["adI"],
+                                  (2**hdc_config["n"])*hdc_config["adI"] - DIMENSIONS,
+                                  args.project_dir)
     #get all paths to the CHV memory files seperated by one empty space
     CHVS = ' '.join(glob(args.project_dir+"mem/normal/*.mif"))
 
