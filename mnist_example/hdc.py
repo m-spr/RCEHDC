@@ -167,7 +167,8 @@ def test():
     print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 
     torch.save(model.weight,                path+"/model/chvs.pt")
-    torch.save(encode.position.weight,      path+"/model/sequence.pt")
+    torch.save(encode.position.weight,      path+"/model/BV.pt")
+    torch.save(encode.value.weight,      path+"/model/ID.pt")
     # torch.save(encode.init_num,             path+"/model/init_num.pt")
     # torch.save(encode.XORs,                 path+"/model/xors.pt")
     # torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
