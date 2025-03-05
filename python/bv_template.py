@@ -259,6 +259,8 @@ connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins pr
 connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
 validate_bd_design
 
+connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
 
 # connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
 # connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]

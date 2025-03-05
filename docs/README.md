@@ -44,7 +44,28 @@ Task List
 - [ ] add non-bainary classification support
 - [ ] modify the TKEEP signal
 
+Related Links
+-------------
+The following links provide access to the functional safety extensions for HDC, built on this framework.
+- [CED-HDC: Lightweight Concurrent Error Detection for Reliable Hyperdimensional Computing](https://github.com/m-spr/CED-HDC)
+- [Non-Uniform Error Correction for Hyperdimensional Computing Edge Accelerators](https://github.com/m-spr/NUECC-HDC)  
+
+
+Citation
+------------
+The current implementation of the framework is based on the following publications. 
 If you are using our framework, please cite:
+```
+@inproceedings{roodsari20243,
+  title={E 3 HDC: Energy Efficient Encoding for Hyper-Dimensional Computing on Edge Devices},
+  author={Roodsari, Mahboobe Sadeghipour and Krautter, Jonas and Meyers, Vincent and Tahoori, Mehdi},
+  booktitle={2024 34th International Conference on Field-Programmable Logic and Applications (FPL)},
+  pages={274--280},
+  year={2024},
+  organization={IEEE}
+}
+```
+If you are using the encoder, please cite:
 ```
 @inproceedings{roodsari2024otfgencoder,
   title={OTFGEncoder-HDC: Hardware-efficient Encoding Techniques for Hyperdimensional Computing},

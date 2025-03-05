@@ -21,6 +21,28 @@ def class_normalize_memory(mem_size, number_of_confComp, zeropadding, path):
             with open(path+'mem/normal/{}_{}.mif'.format(k, number_of_confComp-m-1), 'w') as output:
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
+def group_of_chvs(mem_size, number_of_confComp, zeropadding, path):
+    chvs = torch.load(path+"/model/chvs.pt")
+    bin_list = []
+    for k in chvs:
+        binOfEach = ""
+        for s in k:
+                if s > 0:
+                        binOfEach = binOfEach+'1'
+                else:
+                        binOfEach = binOfEach+'0'
+        zeros = '0'*zeropadding
+        binOfEach = zeros + binOfEach
+        bin_list.append(binOfEach)
+
+    # Write all CHV memory in one file
+    file_path = os.path.join(path+f'mem/normal/CHV_img.mif')
+    with open(file_path, "w") as f:
+        for classes in bin_list:
+            f.write(classes + "\n")  # Write each segment on a new line
+
+
+
 def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding, path):
     a = torch.load(path+"/model/chvs.pt")
     for k in range(len(a)):
