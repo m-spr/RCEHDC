@@ -301,3 +301,52 @@ class IntRVFL(nn.Module):
         weights = functional.ridge_regression(encodings, one_hot_labels, alpha=alpha)
         # Assign the obtained classifier to the output
         self.weight.copy_(weights)
+
+    def quantize(data, bits, eps=1e-12):
+        if (bits > 1):
+            # normalize
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+    
+            min = data.min().item()
+            max = data.max().item()
+    
+    
+            qmin = -(2**(bits-1) -1 )
+            qmax = 2**(bits-1) -1
+            scale = (max - min) / (qmax - qmin)
+            initial_zero_point = qmin - min / scale
+            zero_point = 0
+            if initial_zero_point < qmin:
+                zero_point = qmin
+            elif initial_zero_point > qmax:
+                zero_point = qmax
+            else:
+                zero_point = initial_zero_point
+            zero_point = int(zero_point)
+            q_x = zero_point + data / scale
+            q_x.clamp_(qmin,qmax).round_()
+            data = torch.nn.Parameter(q_x.div_(qmax), requires_grad=False)
+    
+            min = data.min().item()
+            max = data.max().item()
+            data.sub_(min)
+            data.div_(max-min)
+            #scale
+            data.mul_(torch.tensor(2))
+            data.sub_(torch.tensor(1))
+            data.mul_((2**(bits-1))-1)
+            #cast to datatype
+            data.data = data.data.round_().type(torch.int)
+            data.add_(2**(bits-1))
+        else:
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+            
+            positive = torch.tensor(1.0,  dtype=data.dtype, device=data.device)
+            negative = torch.tensor(-1.0, dtype=data.dtype, device=data.device)
+    
+            data = torch.nn.Parameter(torch.where(data > 0, positive, negative))
+        return data
