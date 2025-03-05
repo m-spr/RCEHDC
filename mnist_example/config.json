@@ -1,7 +1,7 @@
 {   
     "TRAIN"         : true,
-    "FREQUENCY"     : 50,
-    "LFSR"          : true,
+    "FREQUENCY"     : 100,
+    "LFSR"          : false,
     "DIMENSIONS"    : 1000,
     "FEATURES"      : 784,
     "NUM_LEVELS"    : 256,

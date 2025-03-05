@@ -18,6 +18,7 @@ import numpy as np
 import random
 import sys
 import os
+import json
 
 import pathlib
 path = str(pathlib.Path(__file__).parent.resolve())
@@ -28,9 +29,13 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-DIMENSIONS = 1000
+with open('config.json') as f:
+    d = json.load(f)
+    print(d)
+
+DIMENSIONS = d["DIMENSIONS"]
 IMG_SIZE = 28
-NUM_LEVELS = 256
+NUM_LEVELS = d["NUM_LEVELS"]
 c = int(math.floor(DIMENSIONS/NUM_LEVELS))
 r = int (DIMENSIONS%NUM_LEVELS)
 print_flag = 0 
@@ -134,8 +139,10 @@ class BaseLevelEncoder(torch.nn.Module):
         x = torchhd.multiset(x)
         return torchhd.hard_quantize(x)
 
-encode = LFSREncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
-# encode = BaseLevelEncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
+if d["LFSR"]:
+    encode = LFSREncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
+else:
+    encode = BaseLevelEncoder(DIMENSIONS, IMG_SIZE, NUM_LEVELS)
 encode = encode.to(device)
 
 num_classes = len(train_ds.classes)
@@ -166,9 +173,11 @@ def test():
 
     print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
 
-    torch.save(model.weight,                path+"/model/chvs.pt")
-    torch.save(encode.position.weight,      path+"/model/sequence.pt")
-    # torch.save(encode.init_num,             path+"/model/init_num.pt")
-    # torch.save(encode.XORs,                 path+"/model/xors.pt")
-    # torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
+    if isinstance(encode, LFSREncoder):
+        torch.save(encode.init_num,             path+"/model/init_num.pt")
+        torch.save(encode.XORs,                 path+"/model/xors.pt")
+        torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
+    elif isinstance(encode, BaseLevelEncoder):
+        torch.save(model.weight,                path+"/model/chvs.pt")
+        torch.save(encode.position.weight,      path+"/model/sequence.pt")
 

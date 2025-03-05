@@ -46,7 +46,7 @@ def write_memory(path, dimensions, levels, lfsr=True):
             else:
                 strXors = strXors + '0'
         with open(path+'mem/configSignature.txt', 'w') as output:
-            output.write(str(strXors[::-1]))
+            output.write(str(strXors[::-1]))    
     
     #general memory file (sequence in LFSR is position in BV)
     weight_mem = []
