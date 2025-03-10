@@ -57,7 +57,10 @@ def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding,
                 output.write(mystr[mem_size*(m):mem_size*(m+1)])
 
 def write_memory(path, dimensions, levels, lfsr=True):
-    position = torch.load(path+"model/sequence.pt")
+    if lfsr:
+        position = torch.load(path+"model/sequence.pt")
+    else:
+        position = torch.load(path+"model/BV.pt")
     #memory specific to LFSR encoding
     if lfsr:
         XORs     = torch.load(path+"model/xors.pt")
@@ -98,17 +101,28 @@ def write_memory(path, dimensions, levels, lfsr=True):
 
     c = int(math.floor(dimensions/levels))
     id_mem = []
-    pointer =  math.ceil(math.log2(levels))
-    for i in range(2**pointer):
-        mystr = ""
-        if i == 0 :
-            mystr = "0"*dimensions
-        elif i == 2**pointer-1 :
-            mystr = "1"*dimensions
-        else :
-            mystr = "0"*(dimensions-(i*c))+"1"*(i*c)
-        id_mem.append(mystr)
-
+    if lfsr:
+        pointer =  math.ceil(math.log2(levels))
+        for i in range(2**pointer):
+            mystr = ""
+            if i == 0 :
+                mystr = "0"*dimensions
+            elif i == 2**pointer-1 :
+                mystr = "1"*dimensions
+            else :
+                mystr = "0"*(dimensions-(i*c))+"1"*(i*c)
+            id_mem.append(mystr)
+    else:
+        with open(path+'model/ID.pt') as ids:
+            for id in ids:
+                strinit2 = ""
+                for i in range(len(id)):
+                    if ini[i] == -1 :
+                        strinit2 = strinit2 + '0'
+                    else :
+                        strinit2 = strinit2 + '1'
+                id_mem.append(strinit2)
+        
     with open(path+'mem/ID_img.coe', 'w') as output:
         output.write("memory_initialization_radix=2;\n")
         output.write("memory_initialization_vector=\n")
