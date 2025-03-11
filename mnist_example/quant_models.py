@@ -21,15 +21,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-from typing import Optional
+import math
+from typing import Type, Union, Optional
 import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn.parameter import Parameter
 import torch.nn.init as init
+import torch.utils.data as data
+from tqdm import tqdm
 
 
 import torchhd.functional as functional
+import torchhd.datasets as datasets
 import torchhd.embeddings as embeddings
 
 
@@ -92,7 +96,7 @@ class Centroid(nn.Module):
 
     def reset_parameters(self) -> None:
         init.zeros_(self.weight)
-    
+
     def forward(self, input: Tensor, dot: bool = False) -> Tensor:
         if dot:
             return functional.dot_similarity(input, self.weight)
@@ -105,7 +109,7 @@ class Centroid(nn.Module):
         self.weight.index_add_(0, target, input, alpha=lr)
 
     @torch.no_grad()
-    def add_online(self, input: Tensor, target: Tensor, lr: float = 1.0, dot: bool = False) -> None:
+    def add_online(self, input: Tensor, target: Tensor, lr: float = 1.0, dot=False) -> None:
         r"""Only updates the prototype vectors on wrongly predicted inputs.
 
         Implements the iterative training method as described in `OnlineHD: Robust, Efficient, and Single-Pass Online Learning Using Hyperdimensional System <https://ieeexplore.ieee.org/abstract/document/9474107>`_.
@@ -136,6 +140,56 @@ class Centroid(nn.Module):
         self.weight.index_add_(0, target, lr * alpha1 * input)
         self.weight.index_add_(0, pred, lr * alpha2 * input)
 
+    @torch.no_grad()
+    def quantize(data, bits, eps=1e-12):
+        if (bits > 1):
+            # normalize
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+    
+            min = data.min().item()
+            max = data.max().item()
+    
+    
+            qmin = -(2**(bits-1) -1 )
+            qmax = 2**(bits-1) -1
+            scale = (max - min) / (qmax - qmin)
+            initial_zero_point = qmin - min / scale
+            zero_point = 0
+            if initial_zero_point < qmin:
+                zero_point = qmin
+            elif initial_zero_point > qmax:
+                zero_point = qmax
+            else:
+                zero_point = initial_zero_point
+            zero_point = int(zero_point)
+            q_x = zero_point + data / scale
+            q_x.clamp_(qmin,qmax).round_()
+            data = torch.nn.Parameter(q_x.div_(qmax), requires_grad=False)
+    
+            min = data.min().item()
+            max = data.max().item()
+            data.sub_(min)
+            data.div_(max-min)
+            #scale
+            data.mul_(torch.tensor(2))
+            data.sub_(torch.tensor(1))
+            data.mul_((2**(bits-1))-1)
+            #cast to datatype
+            data.data = data.data.round_().type(torch.int)
+            data.add_(2**(bits-1))
+        else:
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+            
+            positive = torch.tensor(1.0,  dtype=data.dtype, device=data.device)
+            negative = torch.tensor(-1.0, dtype=data.dtype, device=data.device)
+    
+            data = torch.nn.Parameter(torch.where(data > 0, positive, negative))
+        return data
+    
     @torch.no_grad()
     def normalize(self, eps=1e-12, quantize=False) -> None:
         """Transforms all the class prototype vectors into unit vectors.
@@ -297,3 +351,52 @@ class IntRVFL(nn.Module):
         weights = functional.ridge_regression(encodings, one_hot_labels, alpha=alpha)
         # Assign the obtained classifier to the output
         self.weight.copy_(weights)
+
+    def quantize(data, bits, eps=1e-12):
+        if (bits > 1):
+            # normalize
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+    
+            min = data.min().item()
+            max = data.max().item()
+    
+    
+            qmin = -(2**(bits-1) -1 )
+            qmax = 2**(bits-1) -1
+            scale = (max - min) / (qmax - qmin)
+            initial_zero_point = qmin - min / scale
+            zero_point = 0
+            if initial_zero_point < qmin:
+                zero_point = qmin
+            elif initial_zero_point > qmax:
+                zero_point = qmax
+            else:
+                zero_point = initial_zero_point
+            zero_point = int(zero_point)
+            q_x = zero_point + data / scale
+            q_x.clamp_(qmin,qmax).round_()
+            data = torch.nn.Parameter(q_x.div_(qmax), requires_grad=False)
+    
+            min = data.min().item()
+            max = data.max().item()
+            data.sub_(min)
+            data.div_(max-min)
+            #scale
+            data.mul_(torch.tensor(2))
+            data.sub_(torch.tensor(1))
+            data.mul_((2**(bits-1))-1)
+            #cast to datatype
+            data.data = data.data.round_().type(torch.int)
+            data.add_(2**(bits-1))
+        else:
+            norms = data.norm(dim=1, keepdim=True)
+            norms.clamp_(min=eps)
+            data.div_(norms)
+            
+            positive = torch.tensor(1.0,  dtype=data.dtype, device=data.device)
+            negative = torch.tensor(-1.0, dtype=data.dtype, device=data.device)
+    
+            data = torch.nn.Parameter(torch.where(data > 0, positive, negative))
+        return data
