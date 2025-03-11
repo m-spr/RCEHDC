@@ -21,6 +21,8 @@ set_property target_language VHDL [current_project]
 #open_project $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.xpr
 import_files -norecurse $CHVS
 import_files -norecurse $SOURCEFILES
+import_files -norecurse $PROJECT_DIR/mem/BV_img.coe
+import_files -norecurse $PROJECT_DIR/mem/ID_img.coe
 if {$VIVADO_VERSION == "2022.2"} {
   -Auto-update_compile_order -fileset sources_1
   -Auto-update_compile_order -fileset sources_1
@@ -92,7 +94,7 @@ puts DONE
 insert_block_mem="""
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_BV
 set_property -dict [list \
-  CONFIG.Coe_File ${PROJECT_DIR}/mem/BV_img.coe \
+  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/mem/BV_img.coe \
   CONFIG.Enable_32bit_Address {false} \
   CONFIG.Enable_A {Always_Enabled} \
   CONFIG.Interface_Type {Native} \
@@ -259,8 +261,8 @@ connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins pr
 connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
 validate_bd_design
 
-connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+# connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
+# connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
 
 # connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
 # connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]

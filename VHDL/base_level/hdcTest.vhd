@@ -60,7 +60,7 @@ COMPONENT popCount IS
 component blk_mem_gen_BV IS
   PORT (
     clka : IN STD_LOGIC;
-    addra : IN STD_LOGIC_VECTOR(log2features-1 DOWNTO 0);
+    addra : IN STD_LOGIC_VECTOR(lgf-1 DOWNTO 0);
     douta : OUT STD_LOGIC_VECTOR(d-1 DOWNTO 0)
   );
 end component;
@@ -68,7 +68,7 @@ end component;
 component blk_mem_gen_ID IS
   PORT (
     clka : IN STD_LOGIC;
-    addra : IN STD_LOGIC_VECTOR(log2id-1 DOWNTO 0);
+    addra : IN STD_LOGIC_VECTOR(pixbit-1 DOWNTO 0);
     douta : OUT STD_LOGIC_VECTOR(d-1 DOWNTO 0)
   );
 end component;

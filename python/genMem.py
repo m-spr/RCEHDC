@@ -58,9 +58,9 @@ def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding,
 
 def write_memory(path, dimensions, levels, lfsr=True):
     if lfsr:
-        position = torch.load(path+"model/sequence.pt")
+        position = np.array(torch.load(path+"model/sequence.pt")).astype(np.uint8)
     else:
-        position = torch.load(path+"model/BV.pt")
+        position = torch.load(path+"model/BV.pt").numpy().astype(np.uint8)
     #memory specific to LFSR encoding
     if lfsr:
         XORs     = torch.load(path+"model/xors.pt")
@@ -76,12 +76,15 @@ def write_memory(path, dimensions, levels, lfsr=True):
     #general memory file (sequence in LFSR is position in BV)
     weight_mem = []
     for ini in position:
-        strinit2 = ""
-        for i in range(len(ini)):
-            if ini[i] == -1 :
-                strinit2 = strinit2 + '0'
-            else :
-                strinit2 = strinit2 + '1'
+        # strinit2 = ""
+        # for i in range(len(ini)):
+        #     if ini[i] == -1 :
+        #         strinit2 = strinit2 + '0'
+        #     else :
+        #         strinit2 = strinit2 + '1'
+        # scale [-1,1] to [0,1] by doing (x+1) // 2
+        ini = (ini+1) // 2
+        strinit2 = "".join([str(i) for i in ini])
         weight_mem.append(strinit2)
 
     with open(path+'mem/configInitialvalues.txt', 'w') as output:
@@ -113,17 +116,21 @@ def write_memory(path, dimensions, levels, lfsr=True):
                 mystr = "0"*(dimensions-(i*c))+"1"*(i*c)
             id_mem.append(mystr)
     else:
-        with open(path+'model/ID.pt') as ids:
-            for id in ids:
-                strinit2 = ""
-                for i in range(len(id)):
-                    if ini[i] == -1 :
-                        strinit2 = strinit2 + '0'
-                    else :
-                        strinit2 = strinit2 + '1'
-                id_mem.append(strinit2)
+        #same as writing BV
+        ids = torch.load(path+"model/ID.pt").numpy().astype(np.uint8)
+        for id in ids:
+            # strinit2 = ""
+            # for i in range(len(id)):
+            #     if ini[i] == -1 :
+            #         strinit2 = strinit2 + '0'
+            #     else :
+            #         strinit2 = strinit2 + '1'
+            id = (id+1) // 2
+            strinit2 = "".join([str(i) for i in id])
+            weight_mem.append(strinit2)
+            id_mem.append(strinit2)
         
-    with open(path+'mem/ID_img.coe', 'w') as output:
+    with open(path+'/mem/ID_img.coe', 'w') as output:
         output.write("memory_initialization_radix=2;\n")
         output.write("memory_initialization_vector=\n")
         for i in id_mem:

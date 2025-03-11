@@ -83,7 +83,7 @@ component countingSimCtrl IS
 end component;
 
 --new memory signals
-type CHV_memory is array (classNumber-1 downto 0) of std_logic_vector(1023 downto 0);
+type CHV_memory is array (classNumber-1 downto 0) of std_logic_vector((2**n)-1 downto 0);
 type CHV_memory_tosim is array (classNumber-1 downto 0) of std_logic_vector(d-1 downto 0);
 signal CHV_TO_OUT : CHV_memory_tosim;
 
@@ -103,7 +103,7 @@ begin
 
     process
 	variable mif_line : line;
-	variable temp_bv : bit_vector(1023 downto 0); -- Temporary buffer for each line
+	variable temp_bv : bit_vector((2**n)-1 downto 0); -- Temporary buffer for each line
     begin
         -- Loop through each line of the file
         for i in 0 to classNumber-1 loop
