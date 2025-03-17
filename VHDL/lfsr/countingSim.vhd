@@ -70,12 +70,7 @@ component RSA IS
 end component;
 
 SIGNAL sim : STD_LOGIC_VECTOR (((d)*n)- 1 DOWNTO 0);
-SIGNAL chv_to_fullconf : STD_LOGIC_VECTOR (1023 DOWNTO 0);
-attribute MARK_DEBUG : string;
-constant zesros : std_logic_vector (1023 - 999-1 downto 0):= (others =>'0');
-attribute MARK_DEBUG of sim : signal is "TRUE";
-attribute MARK_DEBUG of dout : signal is "TRUE";
-attribute MARK_DEBUG of CHV  : signal is "TRUE";
+
 begin
 --chv_to_fullconf <= zesros & chv;
 	compArr: FOR I IN d DOWNTO 1 GENERATE
