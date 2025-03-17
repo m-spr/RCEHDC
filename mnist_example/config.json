@@ -1,12 +1,12 @@
 {   
-    "TRAIN"         : true,
+    "TRAIN"         : false,
     "FREQUENCY"     : 100,
-    "LFSR"          : false,
+    "LFSR"          : true,
     "DIMENSIONS"    : 1000,
     "FEATURES"      : 784,
     "NUM_LEVELS"    : 256,
     "NUM_CLASSES"   : 10,
     "SPARSE"        : false,
     "BOARD"         :"PYNQ-Z2",
-    "PROJECT_NAME"  :"test"
+    "PROJECT_NAME"  :"test1000lfsr"
 }

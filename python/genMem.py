@@ -58,9 +58,9 @@ def class_normalize_memory_sparse(ls, mem_size, number_of_confComp, zeropadding,
 
 def write_memory(path, dimensions, levels, lfsr=True):
     if lfsr:
-        position = np.array(torch.load(path+"model/sequence.pt")).astype(np.uint8)
+        position = np.array(torch.load(path+"model/sequence.pt")).astype(np.int8)
     else:
-        position = torch.load(path+"model/BV.pt").numpy().astype(np.uint8)
+        position = torch.load(path+"model/BV.pt").numpy().astype(np.int8)
     #memory specific to LFSR encoding
     if lfsr:
         XORs     = torch.load(path+"model/xors.pt")
@@ -76,15 +76,16 @@ def write_memory(path, dimensions, levels, lfsr=True):
     #general memory file (sequence in LFSR is position in BV)
     weight_mem = []
     for ini in position:
-        # strinit2 = ""
+        # test = ""
         # for i in range(len(ini)):
         #     if ini[i] == -1 :
-        #         strinit2 = strinit2 + '0'
+        #         test = test + '0'
         #     else :
-        #         strinit2 = strinit2 + '1'
+        #         test = test + '1'
         # scale [-1,1] to [0,1] by doing (x+1) // 2
         ini = (ini+1) // 2
         strinit2 = "".join([str(i) for i in ini])
+        # assert test == strinit2
         weight_mem.append(strinit2)
 
     with open(path+'mem/configInitialvalues.txt', 'w') as output:
@@ -117,17 +118,17 @@ def write_memory(path, dimensions, levels, lfsr=True):
             id_mem.append(mystr)
     else:
         #same as writing BV
-        ids = torch.load(path+"model/ID.pt").numpy().astype(np.uint8)
+        ids = torch.load(path+"model/ID.pt").numpy().astype(np.int8)
         for id in ids:
-            # strinit2 = ""
-            # for i in range(len(id)):
+            # test = ""
+            # for i in range(len(ini)):
             #     if ini[i] == -1 :
-            #         strinit2 = strinit2 + '0'
+            #         test = test + '0'
             #     else :
-            #         strinit2 = strinit2 + '1'
+            #         test = test + '1'
             id = (id+1) // 2
             strinit2 = "".join([str(i) for i in id])
-            weight_mem.append(strinit2)
+            # assert test == strinit2
             id_mem.append(strinit2)
         
     with open(path+'/mem/ID_img.coe', 'w') as output:

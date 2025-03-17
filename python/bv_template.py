@@ -99,7 +99,7 @@ set_property -dict [list \
   CONFIG.Enable_A {Always_Enabled} \
   CONFIG.Interface_Type {Native} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Memory_Type {True_Single_Port_ROM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
   CONFIG.Use_RSTB_Pin {false} \
@@ -120,12 +120,12 @@ export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAM
 
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_ID
 set_property -dict [list \
-  CONFIG.Coe_File ${PROJECT_DIR}/mem/ID_img.coe \
+  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/mem/ID_img.coe \
   CONFIG.Enable_32bit_Address {false} \
   CONFIG.Enable_A {Always_Enabled} \
   CONFIG.Interface_Type {Native} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Memory_Type {True_Single_Port_ROM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
   CONFIG.Use_RSTB_Pin {false} \

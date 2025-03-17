@@ -29,7 +29,7 @@ torch.set_printoptions(threshold=sys.maxsize)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using {} device".format(device))
 
-with open('config.json') as f:
+with open(path+'/config.json') as f:
     d = json.load(f)
     print(d)
 
