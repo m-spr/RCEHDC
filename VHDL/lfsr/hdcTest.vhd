@@ -153,7 +153,7 @@ ARCHITECTURE behavioral OF OTFGEn IS
     END COMPONENT;
 
     -- Signals
-    SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop : STD_LOGIC;
+    SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop, bvrst : STD_LOGIC;
     SIGNAL QHV, query_checker, idLevelOut, idLevelOutreg : STD_LOGIC_VECTOR(d-1 DOWNTO 0);
     SIGNAL encoderTodiv : STD_LOGIC_VECTOR(adI*(2**n) - 1 DOWNTO 0);
     SIGNAL BV : STD_LOGIC_VECTOR(d-1 DOWNTO 0);
