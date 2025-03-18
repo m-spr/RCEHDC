@@ -19,69 +19,88 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
-
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY XoringInputPop IS
-	GENERIC ( n  : INTEGER := 8		 -- number of loop
-			 );	 
-	PORT (
-		clk, rst, update	: IN STD_LOGIC; 	-- run should be '1' for 2 clk cycle!!!!! badan behehesh fekr mikonam!!
-		done	: IN  STD_LOGIC;
-		din		: IN  STD_LOGIC;
-		BV		: IN  STD_LOGIC;
-		dout	: OUT  STD_LOGIC_VECTOR (n-1 DOWNTO 0)
-	);
+    GENERIC (
+        n : INTEGER := 8  -- Number of loop iterations
+    );     
+    PORT (
+        clk      : IN  STD_LOGIC;
+        rst      : IN  STD_LOGIC;
+        update   : IN  STD_LOGIC;  -- Run should be '1' for 2 clock cycles (to be considered later)
+        done     : IN  STD_LOGIC;
+        din      : IN  STD_LOGIC;
+        BV       : IN  STD_LOGIC;
+        dout     : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0)
+    );
 END ENTITY XoringInputPop;
 
 ARCHITECTURE behavioral OF XoringInputPop IS
 
-COMPONENT popCount IS
-	GENERIC (lenPop : INTEGER := 8);   -- bit width out popCounters --- LOG2(#feature)
-	PORT (
-		clk , rst 	: IN STD_LOGIC;
-		en		 	: IN STD_LOGIC;
-		dout        : OUT  STD_LOGIC_VECTOR (lenPop-1 DOWNTO 0)
-	);
-END COMPONENT;
+    -- Pop Count Component Declaration
+    COMPONENT popCount IS
+        GENERIC (
+            lenPop : INTEGER := 8  -- Bit width of output popCounters (LOG2(#feature))
+        );
+        PORT (
+            clk  : IN  STD_LOGIC;
+            rst  : IN  STD_LOGIC;
+            en   : IN  STD_LOGIC;
+            dout : OUT STD_LOGIC_VECTOR(lenPop-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-COMPONENT reg IS
-	GENERIC (lenPop : INTEGER := 8);   -- bit width out popCounters
-	PORT (
-		clk 		: IN STD_LOGIC;
-		regUpdate, regrst 	: IN STD_LOGIC;
-		din         : IN  STD_LOGIC_VECTOR (lenPop - 1 DOWNTO 0);
-		dout        : OUT  STD_LOGIC_VECTOR (lenPop - 1 DOWNTO 0)
-	);
-END COMPONENT;
+    -- Register Component Declaration
+    COMPONENT reg IS
+        GENERIC (
+            lenPop : INTEGER := 8  -- Bit width of output popCounters
+        );
+        PORT (
+            clk      : IN  STD_LOGIC;
+            regUpdate : IN  STD_LOGIC;
+            regrst    : IN  STD_LOGIC;
+            din      : IN  STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0);
+            dout     : OUT STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-SIGNAL XORR, poprst : STD_LOGIC;
-SIGNAL doutI	:  STD_LOGIC_VECTOR (n-1 DOWNTO 0);
+    -- Internal Signals
+    SIGNAL XORR   : STD_LOGIC;
+    SIGNAL poprst : STD_LOGIC;
+    SIGNAL doutI  : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of doutI : signal is "TRUE";
-attribute MARK_DEBUG of XORR : signal is "TRUE";
 BEGIN
 
-	pop : popCount
-	GENERIC MAP(n)   -- bit width out popCounters
-	PORT MAP(
-		clk , poprst,
-		XORR,
-		doutI
-	);
-	
-	XORR <= (din XNOR BV) AND update;
-	poprst <= rst or done;
-	
-	outreg : reg 
-	GENERIC MAP(n)   -- bit width out popCounters
-	PORT MAP(
-		clk , done, rst , 
-		doutI,
-		dout 
-	);
-	
-END ARCHITECTURE;
+    -- Pop Count Instance with Explicit Generic Mapping
+    pop : popCount
+        GENERIC MAP (
+            lenPop => n  -- Bit width of popCounters
+        )
+        PORT MAP (
+            clk  => clk,
+            rst  => poprst,
+            en   => XORR,
+            dout => doutI
+        );
+
+    -- XOR Logic and Reset Signal
+    XORR   <= (din XNOR BV) AND update;
+    poprst <= rst OR done;
+
+    -- Register Instance with Explicit Generic Mapping
+    outreg : reg 
+        GENERIC MAP (
+            lenPop => n  -- Bit width of popCounters
+        )
+        PORT MAP (
+            clk      => clk,
+            regUpdate => done,
+            regrst    => rst,
+            din      => doutI,
+            dout     => dout
+        );
+
+END ARCHITECTURE behavioral;

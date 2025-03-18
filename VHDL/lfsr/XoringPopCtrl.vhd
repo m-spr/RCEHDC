@@ -25,116 +25,123 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY XoringPopCtrl IS
-	GENERIC (n  : INTEGER := 10 ;			----bit width out popCounters --- ceiling log2(#feature)
-			featureSize		: INTEGER := 700  );	---- NUmber of loops for popcounts 
-	PORT (
-		clk, rst 				: IN STD_LOGIC;
-		run		 				: IN STD_LOGIC;
-		
-		rundegi, update, doneI, doneII, ready_M		    : OUT STD_LOGIC
-	);
+    GENERIC (
+        n           : INTEGER := 10;   -- Bit width of popCounters (ceiling log2(featureSize))
+        featureSize : INTEGER := 700   -- Number of loops for popCounts
+    );
+    PORT (
+        clk       : IN  STD_LOGIC;
+        rst       : IN  STD_LOGIC;
+        run       : IN  STD_LOGIC;
+        rundegi   : OUT STD_LOGIC;
+        update    : OUT STD_LOGIC;
+        doneI     : OUT STD_LOGIC;
+        doneII    : OUT STD_LOGIC;
+        ready_M   : OUT STD_LOGIC
+    );
 END ENTITY XoringPopCtrl;
 
 ARCHITECTURE ctrl OF XoringPopCtrl IS
 
-	COMPONENT popCount IS
-		GENERIC (lenPop : INTEGER := 8);   -- bit width out popCounters --- LOG2(#feature)
-		PORT (
-			clk , rst 	: IN STD_LOGIC;
-			en		 	: IN STD_LOGIC;
-			dout        : OUT  STD_LOGIC_VECTOR (lenPop-1 DOWNTO 0)
-		);
-	END COMPONENT;	
+    -- PopCount Component Declaration
+    COMPONENT popCount IS
+        GENERIC (
+            lenPop : INTEGER := 8  -- Bit width of popCounters (LOG2(featureSize))
+        );
+        PORT (
+            clk  : IN  STD_LOGIC;
+            rst  : IN  STD_LOGIC;
+            en   : IN  STD_LOGIC;
+            dout : OUT STD_LOGIC_VECTOR(lenPop-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-	TYPE state IS  (init,  sum, fin, fin1);		---sum1, 
-	SIGNAL ns,  ps : state;
-	
-	SIGNAL runPOP, rstPop : STD_LOGIC;
-	SIGNAL count : STD_LOGIC_VECTOR (n-1 DOWNTO 0);
-	CONSTANT checker : STD_LOGIC_VECTOR(n-1 DOWNTO 0) := STD_LOGIC_VECTOR(to_UNSIGNED(featureSize , n));
-	
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of count : signal is "TRUE";
-attribute MARK_DEBUG of rundegi : signal is "TRUE";
+    -- FSM States
+    TYPE state IS (init, sum, fin, fin1);
+    SIGNAL ns, ps : state;
+
+    -- Internal Signals
+    SIGNAL runPOP, rstPop : STD_LOGIC;
+    SIGNAL count          : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+    CONSTANT checker      : STD_LOGIC_VECTOR(n-1 DOWNTO 0) := STD_LOGIC_VECTOR(to_UNSIGNED(featureSize, n));
+
 
 BEGIN
-	PROCESS(clk) BEGIN 
-		IF rising_edge(clk) then
-			IF (rst ='1')then
-				ps <= init; 
-			ELSE  
-				ps <= ns;  
-			END IF;
-		END IF;
-	END PROCESS;
 
-	PROCESS ( ps,  run, count)
-	BEGIN 
-	runPOP <= '0';
-    rstPop <= '0';
-    doneI   <= '0';
-    doneII   <= '0';
-    rundegi  <= '0';
-	ready_M  <= '1';
---    TLAST_S <= '0';	
---    TVALID_S <= '0';
-		CASE (ps) IS 
-			WHEN init =>
-				rstPop <= '1';
-					
-				IF ( run = '1') then
-					ns <= sum;
-					rundegi <= '1';
-					runPOP <= '1';
-					rstPop <= '0';
-				ELSE
-					--rstPop <= '1';
-					ns <= init;
-				END IF;
-			-- WHEN sum1 =>
-			--     IF ( run = '1') then
-			-- 		ns <= sum1;
-			-- 	else 
-            --         ns <= sum;
-            --         rundegi <= '1';
-			-- 	end if;
-			WHEN sum =>
-				IF ( count = checker) then
-						ns <= fin1;
-				ELSE
-				        runPOP <= '1';
-                        rundegi <= '1';
-						ns <= sum;
-				END IF;
-			WHEN fin1 =>
-				ready_M  <= '0';
-                 --rundegi <= '1';
-			     doneI   <= '1';
-				 rstPop <= '1';	
-			     ns <= fin;
-			WHEN fin =>
-				rstPop <= '1';	
-			     
-				ready_M  <= '0';
-				doneII <= '1';
-				ns <= init;
---			WHEN busshand =>
---				TLAST_S <= '1';	
---				TVALID_S <= '1';
---				ns <= init;	
-			     
-			WHEN OTHERS =>
-				ns <= init;
-		END CASE;
-	END PROCESS;	
-	
-	pop : 	popCount 
-		GENERIC MAP(n)
-		PORT MAP(
-			clk , rstPop,
-			runPOP,
-			count
-		);
-		
-	update <= runPOP;
+    -- Synchronous State Update Process
+    PROCESS(clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF (rst = '1') THEN
+                ps <= init; 
+            ELSE  
+                ps <= ns;  
+            END IF;
+        END IF;
+    END PROCESS;
+
+    -- Next State Logic Process
+    PROCESS (ps, run, count)
+    BEGIN
+        -- Default values
+        runPOP  <= '0';
+        rstPop  <= '0';
+        doneI   <= '0';
+        doneII  <= '0';
+        rundegi <= '0';
+        ready_M <= '1';
+
+        CASE ps IS 
+            WHEN init =>
+                rstPop <= '1';  
+                IF run = '1' THEN
+                    ns      <= sum;
+                    rundegi <= '1';
+                    runPOP  <= '1';
+                    rstPop  <= '0';
+                ELSE
+                    ns <= init;
+                END IF;
+
+            WHEN sum =>
+                IF count = checker THEN
+                    ns <= fin1;
+                ELSE
+                    runPOP  <= '1';
+                    rundegi <= '1';
+                    ns      <= sum;
+                END IF;
+
+            WHEN fin1 =>
+                ready_M <= '0';
+                doneI   <= '1';
+                rstPop  <= '1';
+                ns      <= fin;
+
+            WHEN fin =>
+                rstPop  <= '1';
+                ready_M <= '0';
+                doneII  <= '1';
+                ns      <= init;
+
+            WHEN OTHERS =>
+                ns <= init;
+        END CASE;
+    END PROCESS;
+
+    -- Pop Counter Instance with Explicit Generic Mapping
+    pop : popCount
+        GENERIC MAP (
+            lenPop => n
+        )
+        PORT MAP (
+            clk  => clk,
+            rst  => rstPop,
+            en   => runPOP,
+            dout => count
+        );
+
+    -- Output Assignment
+    update <= runPOP;
+
 END ARCHITECTURE ctrl;

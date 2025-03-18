@@ -23,226 +23,212 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
-
-use STD.textio.all;
-use ieee.std_logic_textio.all;
+USE STD.TEXTIO.ALL;
+USE IEEE.STD_LOGIC_TEXTIO.ALL;
 
 ENTITY OTFGEn IS
-    GENERIC
-    (	 inbit		:INTEGER  := 10; -- consider 8 bit is enough for grayscale --- it is not
-        d           : INTEGER := 2000; -- dimension size
-        lgf         : INTEGER := 10; -- bit width out popCounters --- LOG2(#feature)
-        c           : INTEGER := 10; ---- #Classes
+    GENERIC (
+        inbit       : INTEGER := 10;  -- Input bit-width (grayscale)
+        d           : INTEGER := 2000; -- Dimension size
+        lgf         : INTEGER := 10;  -- LOG2(featureSize)
+        c           : INTEGER := 10;  -- Number of classes
         featureSize : INTEGER := 784;
-        n           : INTEGER := 9; --512 each classMem -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,, for comparitor thinpg! 256 unit in each portin of memory
-        adI         : INTEGER := 2; -- number of confComp module, or adderInput and = ceiling(D/(2^n))
-        adz         : INTEGER := 0; -- zeropadding for RSA = 2**? - adI
-        zComp       : INTEGER := 6; -- zeropadding Mux Comp = 2**? - c
-        lgCn        : INTEGER := 4; -- ceilingLOG2(#Classes)
-		logn        : INTEGER := 1; -- MuxCell RSA, ceilingLOG2(#popCounters OR adI)
-		r           : INTEGER := 2;                  -- remainder from division for ID level
-	    x           : INTEGER := 1 -- coefficient of IDLEVEL
-	);
-    PORT
-    (
-        clk		    : IN STD_LOGIC; 
-        rstl		    : IN STD_LOGIC; 
-        run         : IN STD_LOGIC;
-        pixel		: IN STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
-        --update		: IN STD_LOGIC;		
-        done        : OUT STD_LOGIC;
-        TLAST_S, TVALID_S, ready_M       : OUT STD_LOGIC;
-        --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
-        classIndex  : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
+        n           : INTEGER := 9;  -- Max memory pointer bit-width
+        adI         : INTEGER := 2;  -- Number of confComp modules
+        adz         : INTEGER := 0;  -- Zero padding for RSA
+        zComp       : INTEGER := 6;  -- Zero padding for MUX Comparator
+        lgCn        : INTEGER := 4;  -- CeilingLOG2(#Classes)
+        logn        : INTEGER := 1;  -- MuxCell RSA
+        r           : INTEGER := 2;  -- Remainder for ID level
+        x           : INTEGER := 1   -- Coefficient of IDLEVEL
+    );
+    PORT (
+        clk        : IN  STD_LOGIC;
+        rstl       : IN  STD_LOGIC;
+        run        : IN  STD_LOGIC;
+        pixel      : IN  STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
+        done       : OUT STD_LOGIC;
+        TLAST_S    : OUT STD_LOGIC;
+        TVALID_S   : OUT STD_LOGIC;
+        ready_M    : OUT STD_LOGIC;
+        classIndex : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
     );
 END ENTITY OTFGEn;
 
 ARCHITECTURE behavioral OF OTFGEn IS
 
-signal rst : std_logic;
+    SIGNAL rst : STD_LOGIC;
 
-COMPONENT regOne IS
-	GENERIC (init : STD_LOGIC := '1');   -- initial value
-	PORT (
-		clk 		: IN STD_LOGIC;
-		regUpdate, regrst 	: IN STD_LOGIC;
-		din         : IN  STD_LOGIC;
-		dout        : OUT  STD_LOGIC
-	);
-END COMPONENT;
+    COMPONENT regOne IS
+        GENERIC (
+            init : STD_LOGIC := '1'  -- Initial value
+        );
+        PORT (
+            clk       : IN  STD_LOGIC;
+            regUpdate : IN  STD_LOGIC;
+            regrst    : IN  STD_LOGIC;
+            din       : IN  STD_LOGIC;
+            dout      : OUT STD_LOGIC
+        );
+    END COMPONENT;
         
-COMPONENT popCount IS
-		GENERIC (lenPop : INTEGER := 8);   -- bit width out popCounters
-		PORT (
-			clk , rst 	: IN STD_LOGIC;
-			en		 	: IN STD_LOGIC;
-			dout        : OUT  STD_LOGIC_VECTOR (lenPop-1 DOWNTO 0)
-		);
-	END COMPONENT;
-component BasedVectorLFSR IS
-	GENERIC ( n	: INTEGER	:= 2000 ); -- number of bits
-	PORT (
-		clk, rst, update	: IN STD_LOGIC;
-		dout	: OUT  STD_LOGIC_VECTOR (n-1 DOWNTO 0 )
-	);
-end component;
+    COMPONENT popCount IS
+        GENERIC (
+            lenPop : INTEGER := 8  -- Bit width of popCounters
+        );
+        PORT (
+            clk : IN  STD_LOGIC;
+            rst : IN  STD_LOGIC;
+            en  : IN  STD_LOGIC;
+            dout : OUT STD_LOGIC_VECTOR(lenPop-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-component idLevel3 is
-    GENERIC (n : INTEGER := 7;		 		 	-- bit-widths input
-			 c 	: INTEGER := 2; 				-- coeficient of increasment!
-			 r  : INTEGER := 2;                  -- remainder from division
-			 hv : INTEGER := 500		 	 	-- hyperdimesional size
-			 );
-	Port ( values : in STD_LOGIC_VECTOR (n-1 DOWNTO 0);
-           idVector : out STD_LOGIC_VECTOR (hv-1 DOWNTO 0));
-end component;
+    COMPONENT BasedVectorLFSR IS
+        GENERIC (
+            n : INTEGER := 2000  -- Number of bits
+        );
+        PORT (
+            clk    : IN  STD_LOGIC;
+            rst    : IN  STD_LOGIC;
+            update : IN  STD_LOGIC;
+            dout   : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-component encoder IS
-	GENERIC ( d :  INTEGER := 500; 	-- dimension size 
-			lgf  : INTEGER := 10;		 -- bit width out popCounters --- LOG2(#feature) --- nabayad in bashe!?! whats wrong with me?
-			featureSize		: INTEGER := 700
-			);	 
-	PORT (
-		clk, rst	: IN STD_LOGIC; 	-- run should be '1' for 2 clk cycle!!!!! badan behehesh fekr mikonam!!
-		run			: IN  STD_LOGIC;
-		din			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
-		BV			: IN  STD_LOGIC_VECTOR (d-1 DOWNTO 0);
-		rundegi		: OUT STD_LOGIC;
-		done, ready_M		: OUT  STD_LOGIC;
-		dout		: OUT  STD_LOGIC_VECTOR (d-1 DOWNTO 0)
-	);
-END component;
+    COMPONENT idLevel3 IS
+        GENERIC (
+            n  : INTEGER := 7;  -- Input bit-width
+            c  : INTEGER := 2;  -- Increment coefficient
+            r  : INTEGER := 2;  -- ID-level remainder
+            hv : INTEGER := 500  -- Hyperdimensional size
+        );
+        PORT (
+            values   : IN  STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+            idVector : OUT STD_LOGIC_VECTOR(hv-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-component classifier  IS
-	GENERIC ( d : INTEGER := 1000; --- dimension size+zeropading
-	         c : INTEGER := 10;  ---- #Classes
-			 n : INTEGER := 7;	  -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,,
-			 adI : INTEGER := 5;		-- number of confComp module, or adderInput and = ceiling(D/(2^n))
-			 adz  : INTEGER := 3;		 -- zeropadding for RSA = 2**? - adI
-			 zComp : INTEGER := 6; 	-- zeropadding Mux Comp = 2**? - c
-			 lgCn : INTEGER := 4; 	-- ceilingLOG2(#Classes)
-			 logn : INTEGER := 3	);   -- MuxCell RSA, ceilingLOG2(#popCounters)
-	PORT (
-		clk, rst, run  	: IN STD_LOGIC;
-		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);
-		done, TLAST_S, TVALID_S        		: OUT  STD_LOGIC;
-		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-		classIndex 		: OUT  STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)
-	);
-END component;
+    COMPONENT encoder IS
+        GENERIC (
+            d           : INTEGER := 500;  -- Dimension size
+            lgf         : INTEGER := 10;   -- LOG2(#feature)
+            featureSize : INTEGER := 700
+        );
+        PORT (
+            clk      : IN  STD_LOGIC;
+            rst      : IN  STD_LOGIC;
+            run      : IN  STD_LOGIC;
+            din      : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+            BV       : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+            rundegi  : OUT STD_LOGIC;
+            done     : OUT STD_LOGIC;
+            ready_M  : OUT STD_LOGIC;
+            dout     : OUT STD_LOGIC_VECTOR(d-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-component hvTOcompIn IS
-    GENERIC
-    (
-        d           : INTEGER := 100000; -- dimension size
-        n           : INTEGER := 7; -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,,
-        adI         : INTEGER := 20 -- number of confComp module, or adderInput and = ceiling(D/(2^n))
-	);
-    PORT
-    (
-        clk		   : IN STD_LOGIC; 
-        rst		   : IN STD_LOGIC; 
-        din        : IN STD_LOGIC_VECTOR (d - 1 DOWNTO 0);
-        pointer    : IN STD_LOGIC_VECTOR (n - 1 DOWNTO 0);
-        dout	   : OUT STD_LOGIC_VECTOR(adI - 1 DOWNTO 0)
-    );
-END component;
+    COMPONENT classifier IS
+        GENERIC (
+            d     : INTEGER := 1000;  -- Dimension size + padding
+            c     : INTEGER := 10;  -- Number of classes
+            n     : INTEGER := 7;  -- Max memory pointer bit-width
+            adI   : INTEGER := 5;  -- Number of confComp modules
+            adz   : INTEGER := 3;  -- Zero padding for RSA
+            zComp : INTEGER := 6;  -- Zero padding for MUX Comparator
+            lgCn  : INTEGER := 4;  -- CeilingLOG2(#Classes)
+            logn  : INTEGER := 3   -- MuxCell RSA
+        );
+        PORT (
+            clk        : IN  STD_LOGIC;
+            rst        : IN  STD_LOGIC;
+            run        : IN  STD_LOGIC;
+            hv         : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+            done       : OUT STD_LOGIC;
+            TLAST_S    : OUT STD_LOGIC;
+            TVALID_S   : OUT STD_LOGIC;
+            pointer    : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+            classIndex : OUT STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-component reg IS
-	GENERIC (lenPop : INTEGER := 8);   -- bit width out popCounters
-	PORT (
-		clk 		: IN STD_LOGIC;
-		regUpdate, regrst 	: IN STD_LOGIC;
-		din         : IN  STD_LOGIC_VECTOR (lenPop - 1 DOWNTO 0);
-		dout        : OUT  STD_LOGIC_VECTOR (lenPop - 1 DOWNTO 0)
-	);
-END component;
+    -- Signals
+    SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop : STD_LOGIC;
+    SIGNAL QHV, query_checker, idLevelOut, idLevelOutreg : STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+    SIGNAL encoderTodiv : STD_LOGIC_VECTOR(adI*(2**n) - 1 DOWNTO 0);
+    SIGNAL BV : STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+    SIGNAL divToClass : STD_LOGIC_VECTOR(adI - 1 DOWNTO 0);
+    SIGNAL pointer : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+    SIGNAL classIndexI : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+    SIGNAL indexdatamem : STD_LOGIC_VECTOR(14 DOWNTO 0);
+    SIGNAL indexdatamem11 : STD_LOGIC_VECTOR(12 DOWNTO 0);
 
-signal doneEncoderToClassifier, rundegi, popen , rstpop1 , rstpop: STD_LOGIC;
-signal QHV : std_logic_vector ( d - 1 DOWNTO 0);
-signal query_checker : std_logic_vector ( d - 1 DOWNTO 0);
-signal encoderTodiv : std_logic_vector ( adI*(2**n) - 1 DOWNTO 0);
-signal idLevelOut : std_logic_vector ( d - 1 DOWNTO 0);
-signal idLevelOutreg : std_logic_vector ( d - 1 DOWNTO 0);
-
-signal pixelreg		: STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
-        
-signal BV : std_logic_vector ( d - 1 DOWNTO 0);
-signal divToClass : std_logic_vector ( adI - 1 DOWNTO 0);
-signal pointer	: STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-signal classIndexI :  STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
-constant encodeVecZero	: STD_LOGIC_VECTOR( adI*(2**n)-d-1 DOWNTO 0) := (others =>'0');
-signal indexdatamem : STD_LOGIC_VECTOR(14 DOWNTO 0);
-signal indexdatamem11 : STD_LOGIC_VECTOR(12 DOWNTO 0);
-
-file file_VECTORS : text;
-SIGNAL bvrst : std_logic;
-
--- attribute MARK_DEBUG : string;
--- attribute MARK_DEBUG of pixel : signal is "TRUE";
--- attribute MARK_DEBUG of BV : signal is "TRUE";
---attribute MARK_DEBUG of pixelMemOutIndex : signal is "TRUE";
--- attribute MARK_DEBUG of idLevelOut : signal is "TRUE";
--- attribute MARK_DEBUG of rstpop : signal is "TRUE";
--- attribute MARK_DEBUG of classIndex : signal is "TRUE";
--- attribute MARK_DEBUG of indexdatamem11 : signal is "TRUE";
--- attribute MARK_DEBUG of QHV : signal is "TRUE";
--- attribute MARK_DEBUG of doneEncoderToClassifier : signal is "TRUE";
--- attribute MARK_DEBUG of pointer : signal is "TRUE";
---attribute MARK_DEBUG of divToClass : signal is "TRUE";
--- attribute MARK_DEBUG of done : signal is "TRUE";
---attribute MARK_DEBUG of encoderTodiv : signal is "TRUE";
+    CONSTANT encodeVecZero : STD_LOGIC_VECTOR(adI*(2**n)-d-1 DOWNTO 0) := (others => '0');
 
 BEGIN
-rst <= not(rstl);
-encoderTodiv <= encodeVecZero & QHV;
-rstpop1 <= '1' when  indexdatamem11 = "1010101110000" else '0';
---memen <= '1';
-rstpop <= rstpop1 or rst;
---pixelMemOutIndex <= indexdatamem;
-indexdatamem <=  indexdatamem11 & "00";
 
+    rst <= NOT rstl;
+    encoderTodiv <= encodeVecZero & QHV;
+    rstpop1 <= '1' WHEN indexdatamem11 = "1010101110000" ELSE '0';
+    rstpop <= rstpop1 OR rst;
+    indexdatamem <= indexdatamem11 & "00";
 
-pop : 	popCount
-		GENERIC map(13)
-	       PORT MAP(
-			clk , rstpop,
-			rundegi,
-			indexdatamem11
-		);
-bvrst <= rst OR doneEncoderToClassifier or rstpop;
-	
-    idGen: idLevel3
-    GENERIC map(inbit, x, r, d)
-	Port map( pixel, ---- pixelreg,
-           idLevelOut
-    );
+    -- Pop Count Component
+    pop : popCount
+        GENERIC MAP (
+            lenPop => 13
+        )
+        PORT MAP (
+            clk  => clk,
+            rst  => rstpop,
+            en   => rundegi,
+            dout => indexdatamem11
+        );
+
+    bvrst <= rst OR doneEncoderToClassifier OR rstpop;
     
+    -- ID Level Generator
+    idGen : idLevel3
+        GENERIC MAP (
+            n  => inbit,
+            c  => x,
+            r  => r,
+            hv => d
+        )
+        PORT MAP (
+            values  => pixel,
+            idVector => idLevelOut
+        );
 
-	BVGen: BasedVectorLFSR
-	GENERIC map( d)
-	PORT MAP		(
-		clk, bvrst, rundegi,
-		BV
-	);
+    -- Based Vector Generator
+    BVGen : BasedVectorLFSR
+        GENERIC MAP (
+            n => d
+        )
+        PORT MAP (
+            clk    => clk,
+            rst    => bvrst,
+            update => rundegi,
+            dout   => BV
+        );
 
-	enc: encoder
-	GENERIC map(
-			d, lgf, featureSize
-			)
-	PORT map( clk, rst, run,
-		idLevelOut, BV, rundegi, 
-		doneEncoderToClassifier, ready_M,
-		QHV
-	);
+    -- Encoder
+    enc : encoder
+        GENERIC MAP (
+            d           => d,
+            lgf         => lgf,
+            featureSize => featureSize
+        )
+        PORT MAP (
+            clk      => clk,
+            rst      => rst,
+            run      => run,
+            din      => idLevelOut,
+            BV       => BV,
+            rundegi  => rundegi,
+            done     => doneEncoderToClassifier,
+            ready_M  => ready_M,
+            dout     => QHV
+        );
 
-	cls: classifier
-	GENERIC map ( adI*(2**n), c, n, adI, adz, zComp ,lgCn, logn)
-	PORT map(
-		clk, rst, doneEncoderToClassifier,
-		encoderTodiv,
-		done, TLAST_S, TVALID_S, pointer,
-		classIndex
-	);
-
-End architecture;
+END ARCHITECTURE behavioral;

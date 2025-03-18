@@ -95,10 +95,6 @@ SIGNAL reg1Update, reg1rst, reg2Update, reg2rst	: STD_LOGIC;				---- run shuld b
 SIGNAL muxSel	:  STD_LOGIC_VECTOR (logInNum DOWNTO 0);
 SIGNAL point	: STD_LOGIC_VECTOR(n-1 DOWNTO 0);
 
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of CHV : signal is "TRUE";
-attribute MARK_DEBUG of CHV_TO_OUT : signal is "TRUE";
-
 begin
 
     process

@@ -19,90 +19,129 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 -- SOFTWARE.
-
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
-ENTITY classifier  IS
-	GENERIC (d : INTEGER := 1000; --- dimension size+zeropading
-	         c : INTEGER := 10;  ---- #Classes
-			 n : INTEGER := 7;	  -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,, 
-			 adI : INTEGER := 5;		-- number of confComp module, or adderInput and = ceiling(D/(2^n))
-			 adz  : INTEGER := 3;		 -- zeropadding for RSA = 2**? - adI 
-			 zComp : INTEGER := 6; 	-- zeropadding Mux Comp = 2**? - c
-			 lgCn : INTEGER := 4; 	-- ceilingLOG2(#Classes)
-			 logn : INTEGER := 3	);   -- MuxCell RSA, ceilingLOG2(#popCounters)
-	PORT (
-		clk, rst, run  	: IN STD_LOGIC;		
-		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);	
-		done, TLAST_S, TVALID_S        		: OUT  STD_LOGIC;	
-		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-		classIndex 		: OUT  STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)   	
-	);
-END ENTITY classifier ;
+ENTITY classifier IS
+    GENERIC (
+        d       : INTEGER := 1000;  -- Dimension size + zero-padding
+        c       : INTEGER := 10;    -- Number of classes
+        n       : INTEGER := 7;     -- Bit-widths of memory pointer, counter, etc.
+        adI     : INTEGER := 5;     -- Number of confComp modules or adder inputs (ceiling(D / 2^n))
+        adz     : INTEGER := 3;     -- Zero-padding for RSA = 2**? - adI
+        zComp   : INTEGER := 6;     -- Zero-padding for Mux Comp = 2**? - c
+        lgCn    : INTEGER := 4;     -- Ceiling log2(number of classes)
+        logn    : INTEGER := 3      -- MuxCell RSA, ceiling log2(popCounters)
+    );
+    PORT (
+        clk         : IN  STD_LOGIC;
+        rst         : IN  STD_LOGIC;
+        run         : IN  STD_LOGIC;
+        hv          : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        done        : OUT STD_LOGIC;
+        TLAST_S     : OUT STD_LOGIC;
+        TVALID_S    : OUT STD_LOGIC;
+        pointer     : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+        classIndex  : OUT STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)
+    );
+END ENTITY classifier;
 
 ARCHITECTURE behavioral OF classifier IS
 
-COMPONENT countingSimTop  IS
-	GENERIC (n : INTEGER := 10;		 --; 	-- bit-widths of memory pointer, counter and etc,,, 
-			 d : INTEGER := 10;		 	 	-- number of confComp module
-			 z		 : INTEGER := 0;		 -- zeropadding to 2** for RSA 
-			 classNumber : INTEGER := 10; 		---- class number --- for memory image
-			 logInNum : INTEGER := 3	);   -- MuxCell, ceilingLOG2(#popCounters)
-	PORT (
-		clk, rst, run  	: IN STD_LOGIC;	
-		hv        		: IN  STD_LOGIC_VECTOR(d -1 DOWNTO 0);	
-		done       		: OUT  STD_LOGIC;	
-		pointer		 	: OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);	
-		dout	 		: OUT  STD_LOGIC_VECTOR(classNumber*(n+logInNum)-1 DOWNTO 0)  	
-	);
-END COMPONENT; 
+    -- Counting Simulation Top-Level Component
+    COMPONENT countingSimTop IS
+        GENERIC (
+            n           : INTEGER := 10;  -- Bit-widths of memory pointer, counter, etc.
+            d           : INTEGER := 10;  -- Number of confComp modules
+            z           : INTEGER := 0;   -- Zero-padding to 2** for RSA
+            classNumber : INTEGER := 10;  -- Number of classes for memory image
+            logInNum    : INTEGER := 3    -- MuxCell, ceiling log2(popCounters)
+        );
+        PORT (
+            clk      : IN  STD_LOGIC;
+            rst      : IN  STD_LOGIC;
+            run      : IN  STD_LOGIC;
+            hv       : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+            done     : OUT STD_LOGIC;
+            pointer  : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+            dout     : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-COMPONENT comparatorTop  IS
-	GENERIC (len : INTEGER := 8;   -- bit width out adder
-			 n : INTEGER := 10; 	-- #Classes       ---- all 4s in this code can be replaced with LOG2(n)
-			 z : INTEGER := 10; 	-- zeropadding to 2**
-			 lgn : INTEGER := 4); 	---LOG2(n)
-	PORT (
-		clk, rst, run  	: IN STD_LOGIC;
-		a        		: IN  STD_LOGIC_VECTOR (n*len - 1 DOWNTO 0);    --- 16 = 2**4 ,,, 4 is LOG2(n)
-		done , TLAST_S, TVALID_S         	: OUT  STD_LOGIC;    							 --- final result is ready 
-		classIndex 		: OUT  STD_LOGIC_VECTOR  (lgn-1 DOWNTO 0)  			 --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
-	);
-END COMPONENT;
-SIGNAL hvTOcount      :  STD_LOGIC_VECTOR(adI -1 DOWNTO 0);
-SIGNAL dones  :  STD_LOGIC;	
-SIGNAL toComp	:  STD_LOGIC_VECTOR(c*(n+logn)-1 DOWNTO 0);
-SIGNAL point	:  STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of toComp : signal is "TRUE";
-attribute MARK_DEBUG of hvTOcount : signal is "TRUE";
+    -- Comparator Top-Level Component
+    COMPONENT comparatorTop IS
+        GENERIC (
+            len  : INTEGER := 8;  -- Bit width out adder
+            n    : INTEGER := 10; -- Number of classes
+            z    : INTEGER := 10; -- Zero-padding to 2**
+            lgn  : INTEGER := 4   -- Log2 of the number of classes
+        );
+        PORT (
+            clk         : IN  STD_LOGIC;
+            rst         : IN  STD_LOGIC;
+            run         : IN  STD_LOGIC;
+            a           : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0);
+            done        : OUT STD_LOGIC;
+            TLAST_S     : OUT STD_LOGIC;
+            TVALID_S    : OUT STD_LOGIC;
+            classIndex  : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0)
+        );
+    END COMPONENT;
 
-BEGIN 
+    -- Internal Signals
+    SIGNAL hvTOcount : STD_LOGIC_VECTOR(adI - 1 DOWNTO 0);
+    SIGNAL dones     : STD_LOGIC;
+    SIGNAL toComp    : STD_LOGIC_VECTOR(c * (n + logn) - 1 DOWNTO 0);
+    SIGNAL point     : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+
+BEGIN
+
+    -- Generate hvTOcount using pointer indexing
     concat: FOR I IN adI-1 DOWNTO 0 GENERATE
-		hvTOcount(I) <= hv(to_integer(unsigned(point))+(2**n)*I);
-	END GENERATE concat;
-	
-	CST : countingSimTop 
-	GENERIC MAP(n, adI, adz, c, logn ) 
-	PORT MAP(
-		clk, rst, run, 
-		hvTOcount,
-		dones,
-		point,
-		toComp
-	);
-	
-	CT : comparatorTop 
-	GENERIC MAP((n+logn), c, zComp, lgCn) 
-	PORT MAP(
-		clk, rst, dones,
-		toComp,
-		done,TLAST_S, TVALID_S  ,
-		classIndex 
-	);
+        hvTOcount(I) <= hv(to_integer(unsigned(point)) + (2**n) * I);
+    END GENERATE concat;
 
+    -- Counting Simulation Instance
+    CST : countingSimTop
+        GENERIC MAP (
+            n           => n,
+            d           => adI,
+            z           => adz,
+            classNumber => c,
+            logInNum    => logn
+        )
+        PORT MAP (
+            clk     => clk,
+            rst     => rst,
+            run     => run,
+            hv      => hvTOcount,
+            done    => dones,
+            pointer => point,
+            dout    => toComp
+        );
 
-pointer <= point;
-END ARCHITECTURE;
+    -- Comparator Instance
+    CT : comparatorTop
+        GENERIC MAP (
+            len  => (n + logn),
+            n    => c,
+            z    => zComp,
+            lgn  => lgCn
+        )
+        PORT MAP (
+            clk        => clk,
+            rst        => rst,
+            run        => dones,
+            a          => toComp,
+            done       => done,
+            TLAST_S    => TLAST_S,
+            TVALID_S   => TVALID_S,
+            classIndex => classIndex
+        );
+
+    -- Assign output pointer
+    pointer <= point;
+
+END A
+
