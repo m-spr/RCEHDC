@@ -2,3 +2,4 @@ torchvision
 torch-hd==5.1.2
 numpy==1.26.4
 torchmetrics==0.11.4
+torch==2.3.1
