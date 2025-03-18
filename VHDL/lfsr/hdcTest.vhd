@@ -231,4 +231,28 @@ BEGIN
             dout     => QHV
         );
 
+    -- Classifier
+    cls : classifier
+        GENERIC MAP (
+           d      =>  adI*(2**n),
+            c     => c,
+            n     => n, 
+            adI   => adI,
+            adz   => adz,
+            zComp  => zComp,
+            lgCn  => lgCn,
+            logn  => logn
+        )
+        PORT MAP (
+            clk      => clk,
+            rst      => rst,
+            run      => doneEncoderToClassifier,
+            hv       => encoderTodiv,
+            done     => done,
+            TLAST_S   => TLAST_S,
+            TVALID_S  => TVALID_S,
+            pointer   => pointer,
+            classIndex => classIndex
+        );
+ 
 END ARCHITECTURE behavioral;
