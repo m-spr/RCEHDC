@@ -5,6 +5,7 @@
 data/
 vivado/
 MNISTmodels/
+mnist_example/
 test*
 *.coe
 *.mif
