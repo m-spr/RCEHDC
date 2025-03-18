@@ -311,7 +311,7 @@ create_bd = (template.create_block_design % (hdc_config["sparsity"],
                                              # tkeep and tdata need to be adjusted for different datasets
                                              ))
 with open(args.project_dir+"create_bd.tcl", "w") as f:
-        f.write(create_bd)
+    f.write(create_bd)
 
 process.stdin.write(create_bd.encode('utf-8'))
 process.stdin.flush()
@@ -319,11 +319,14 @@ process.stdin.flush()
 write_log(log, "DONE", "failed")
 log.close()
 
+# Vivado needs some time...
+time.sleep(5)
+
 print("6. Run Synthesis")
 # log = open(args.project_dir+"run_synthesis.log", "w")
 launch_synth = template.launch_synth
 with open(args.project_dir+"launch_synth.tcl", "w") as f:
-        f.write(create_bd)
+    f.write(create_bd)
 process.stdin.write(launch_synth.encode('utf-8'))
 process.stdin.flush()
 read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "synthesis")
@@ -351,7 +354,7 @@ os.makedirs(args.project_dir+"release", exist_ok=True)
 # log = open(args.project_dir+"generate_bitstream.log", "w")
 generate_bitstream = template.generate_bitstream
 with open(args.project_dir+"generate_bitstream.tcl", "w") as f:
-        f.write(generate_bitstream)
+    f.write(generate_bitstream)
 process.stdin.write(generate_bitstream.encode('utf-8'))
 process.stdin.flush()
 
@@ -366,7 +369,7 @@ print("9. Preparing Driver")
 log = open(args.project_dir+"prepare_driver.log", "w")
 prepare_driver = template.prepare_driver
 with open(args.project_dir+"prepare_driver.tcl", "w") as f:
-        f.write(prepare_driver)
+    f.write(prepare_driver)
 process.stdin.write(prepare_driver.encode('utf-8'))
 process.stdin.flush()
 write_log(log, "DONE", "failed")

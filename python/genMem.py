@@ -60,7 +60,7 @@ def write_memory(path, dimensions, levels, lfsr=True):
     if lfsr:
         position = np.array(torch.load(path+"model/sequence.pt")).astype(np.int8)
     else:
-        position = torch.load(path+"model/BV.pt").numpy().astype(np.int8)
+        position = torch.load(path+"model/BV.pt").detach().numpy().astype(np.int8)
     #memory specific to LFSR encoding
     if lfsr:
         XORs     = torch.load(path+"model/xors.pt")
@@ -118,7 +118,7 @@ def write_memory(path, dimensions, levels, lfsr=True):
             id_mem.append(mystr)
     else:
         #same as writing BV
-        ids = torch.load(path+"model/ID.pt").numpy().astype(np.int8)
+        ids = torch.load(path+"model/ID.pt").detach().numpy().astype(np.int8)
         for id in ids:
             # test = ""
             # for i in range(len(ini)):

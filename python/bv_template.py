@@ -38,12 +38,12 @@ set FEATURES %d
 set DIMENSIONS %d
 set LEVELS %d
 
-ipx::package_project -root_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports -vendor user.org -library user -taxonomy /UserIP
+ipx::package_project -root_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1 -vendor user.org -library user -taxonomy /UserIP
 set_property core_revision 2 [ipx::current_core]
 ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
-set_property  ip_repo_paths  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports [current_project]
+set_property  ip_repo_paths  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1 [current_project]
 
 update_ip_catalog
 
@@ -94,19 +94,15 @@ puts DONE
 insert_block_mem="""
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_BV
 set_property -dict [list \
-  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/mem/BV_img.coe \
-  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/imports/mem/BV_img.coe \
   CONFIG.Enable_A {Always_Enabled} \
-  CONFIG.Interface_Type {Native} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {True_Single_Port_ROM} \
+  CONFIG.Memory_Type {Single_Port_ROM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
-  CONFIG.Use_RSTB_Pin {false} \
   CONFIG.Write_Depth_A $FEATURES \
   CONFIG.Write_Width_A $DIMENSIONS \
 ] [get_ips blk_mem_gen_BV]
-set_property -dict [list CONFIG.Write_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Depth_A [expr int($FEATURES)] CONFIG.Read_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Width_B [expr int($DIMENSIONS)] CONFIG.Read_Width_B [expr int($DIMENSIONS)]] [get_ips blk_mem_gen_BV]
+set_property -dict [list CONFIG.Write_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Depth_A [expr int($FEATURES)] CONFIG.Read_Width_A [expr int($DIMENSIONS)]] [get_ips blk_mem_gen_BV]
 
 generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_BV/blk_mem_gen_BV.xci]
 update_compile_order -fileset sources_1
@@ -120,19 +116,15 @@ export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAM
 
 create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_ID
 set_property -dict [list \
-  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/mem/ID_img.coe \
-  CONFIG.Enable_32bit_Address {false} \
+  CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/imports/mem/ID_img.coe \
   CONFIG.Enable_A {Always_Enabled} \
-  CONFIG.Interface_Type {Native} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {True_Single_Port_ROM} \
+  CONFIG.Memory_Type {Single_Port_ROM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
-  CONFIG.Use_RSTB_Pin {false} \
   CONFIG.Write_Depth_A $LEVELS \
   CONFIG.Write_Width_A $DIMENSIONS \
 ] [get_ips blk_mem_gen_ID]
-set_property -dict [list CONFIG.Write_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Depth_A [expr int($LEVELS)] CONFIG.Read_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Width_B [expr int($DIMENSIONS)] CONFIG.Read_Width_B [expr int($DIMENSIONS)]] [get_ips blk_mem_gen_ID]
+set_property -dict [list CONFIG.Write_Width_A [expr int($DIMENSIONS)] CONFIG.Write_Depth_A [expr int($LEVELS)] CONFIG.Read_Width_A [expr int($DIMENSIONS)]] [get_ips blk_mem_gen_ID]
 
 generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_ID/blk_mem_gen_ID.xci]
 update_compile_order -fileset sources_1
@@ -152,11 +144,18 @@ ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 ipx::save_core [ipx::current_core]
-update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports
+update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1
 ipx::merge_project_changes files [ipx::current_core]
 ipx::merge_project_changes hdl_parameters [ipx::current_core]
+
+update_compile_order -fileset sources_1
+ipx::merge_project_changes files [ipx::current_core]
+
 ipx::save_core [ipx::current_core]
-update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports
+#ipx::move_temp_component_back -component [ipx::current_core]
+update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1
+
+
 
 puts DONE
 """
@@ -291,6 +290,9 @@ add_files -norecurse $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.gen/sources_1/bd/d
 update_compile_order -fileset sources_1
 set_property top design_1_wrapper [current_fileset]
 update_compile_order -fileset sources_1
+
+#exec cp -r $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports/mem $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.gen/sources_1/bd/design_1/ip/imports/mem
+
 
 puts DONE
 """
