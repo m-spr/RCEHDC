@@ -143,5 +143,5 @@ BEGIN
     -- Assign output pointer
     pointer <= point;
 
-END A
+END ARCHITECTURE behavioral;
 
