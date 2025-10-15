@@ -38,9 +38,6 @@ END COMPONENT;
 SIGNAL XORR, poprst : STD_LOGIC;
 SIGNAL doutI	:  STD_LOGIC_VECTOR (n-1 DOWNTO 0);
 
-attribute MARK_DEBUG : string;
-attribute MARK_DEBUG of doutI : signal is "TRUE";
-attribute MARK_DEBUG of XORR : signal is "TRUE";
 BEGIN
 
 	pop : popCount
