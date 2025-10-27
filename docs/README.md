@@ -1,3 +1,6 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
+[![HDC](https://img.shields.io/badge/Topic-HDC-blue.svg)](#)
+
 ![logo](../figures/logo.jpg)
 
 Welcome to the RCEHDC documentation!
