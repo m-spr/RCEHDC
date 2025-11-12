@@ -36,5 +36,5 @@ END ENTITY comparator;
 
 ARCHITECTURE behavioral OF comparator IS
 BEGIN
-    gr <= '1' WHEN UNSIGNED(a) >= UNSIGNED(b) ELSE '0';  
+    gr <= '1' WHEN UNSIGNED(a) > UNSIGNED(b) ELSE '0';  
 END ARCHITECTURE behavioral;
