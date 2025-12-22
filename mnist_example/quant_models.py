@@ -188,6 +188,42 @@ class Centroid(nn.Module):
         return "in_features={}, out_features={}".format(
             self.in_features, self.out_features is not None
         )
+    
+    @torch.no_grad()
+    def add_online_quantized_aware(self, input: Tensor, target: Tensor, lr: float = 1.0) -> None:
+        """
+        Updates shadow weights based on the error of their QUANTIZED (Binary) version.
+        """
+        # 1. Binarize weights for forward pass
+        binary_weight = self.weight.sign()
+        binary_weight[binary_weight == 0] = 1
+        
+        # 2. Use Hamming similarity (matches FPGA behavior)
+        logit = functional.hamming_similarity(input, binary_weight)
+        
+        pred = logit.argmax(1)
+        is_wrong = target != pred
+
+        if is_wrong.sum().item() == 0:
+            return
+
+        # Filter misclassified
+        logit_wrong = logit[is_wrong]
+        input_wrong = input[is_wrong]
+        target_wrong = target[is_wrong]
+        pred_wrong = pred[is_wrong]
+        
+        # 3. Compute update strength based on confidence
+        D = self.in_features
+        logit_norm = logit_wrong / D 
+        
+        # Use larger alpha for more aggressive updates
+        alpha1 = (1.0 - logit_norm.gather(1, target_wrong.unsqueeze(1)))
+        alpha2 = (logit_norm.gather(1, pred_wrong.unsqueeze(1)) - 1.0)
+        
+        # 4. Update shadow weights with momentum-like accumulation
+        self.weight.index_add_(0, target_wrong, lr * alpha1 * input_wrong)
+        self.weight.index_add_(0, pred_wrong, lr * alpha2 * input_wrong)
 
 
 class IntRVFL(nn.Module):
@@ -263,7 +299,7 @@ class IntRVFL(nn.Module):
         encodings = self.encode(x)
 
         # Get similarity values for each class
-        return functional.dot_similarity(encodings, self.weight)
+        return functional.cosine_similarity(encodings, self.weight)
 
     # Train the model
     @torch.no_grad()

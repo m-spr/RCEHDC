@@ -148,6 +148,7 @@ encode = encode.to(device)
 num_classes = len(train_ds.classes)
 model = Centroid(DIMENSIONS, num_classes)
 model = model.to(device)
+shadow_weight = None
 
 def train():
     with torch.no_grad():
@@ -157,6 +158,9 @@ def train():
 
             samples_hv = encode(samples)
             model.add(samples_hv, labels)
+    global shadow_weight
+    if shadow_weight is None:
+        shadow_weight = model.weight.detach().clone()
 
 def test():
     accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)
@@ -168,7 +172,6 @@ def test():
             samples = samples.to(device)
             samples_hv = encode(samples)
             outputs = model(samples_hv, dot=True)
-            #if print_flag == 1:
             accuracy.update(outputs.cpu(), labels)
 
     print(f"Testing accuracy of {(accuracy.compute().item() * 100):.3f}%")
@@ -180,5 +183,24 @@ def test():
         torch.save(encode.init_num,             path+"/model/init_num.pt")
         torch.save(encode.XORs,                 path+"/model/xors.pt")
         torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
- 
+
+def online_learning(epochs: int = 2, lr: float = 64, loader=None):
+    """Quantization-aware online updates using the binary-weight error signal."""
+    global shadow_weight
+    if shadow_weight is None:
+        shadow_weight = model.weight.detach().clone()
+    # restore shadow (full-precision) weights before online updates
+    model.weight = torch.nn.Parameter(shadow_weight.clone().to(device), requires_grad=False)
+
+    ld = loader if loader is not None else train_ld
+    with torch.no_grad():
+        for epoch in range(epochs):
+            for samples, labels in tqdm(ld, desc=f"Online (QA) epoch {epoch+1}"):
+                samples = samples.to(device)
+                labels = labels.to(device)
+                samples_hv = encode(samples)
+                model.add_online_quantized_aware(samples_hv, labels, lr=lr)
+
+    # keep the updated shadow weights for future reuse
+    shadow_weight = model.weight.detach().clone()
 
