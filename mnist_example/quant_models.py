@@ -198,7 +198,7 @@ class Centroid(nn.Module):
         binary_weight = self.weight.sign()
         binary_weight[binary_weight == 0] = 1
         
-        # 2. Use Hamming similarity (matches FPGA behavior)
+        # 2. Hamming similarity
         logit = functional.hamming_similarity(input, binary_weight)
         
         pred = logit.argmax(1)
@@ -216,8 +216,6 @@ class Centroid(nn.Module):
         # 3. Compute update strength based on confidence
         D = self.in_features
         logit_norm = logit_wrong / D 
-        
-        # Use larger alpha for more aggressive updates
         alpha1 = (1.0 - logit_norm.gather(1, target_wrong.unsqueeze(1)))
         alpha2 = (logit_norm.gather(1, pred_wrong.unsqueeze(1)) - 1.0)
         
