@@ -184,7 +184,7 @@ def test():
         torch.save(encode.XORs,                 path+"/model/xors.pt")
         torch.save(encode.generated_sequence,   path+"/model/sequence.pt")
 
-def online_learning(epochs: int = 2, lr: float = 64, loader=None):
+def online_learning(epochs: int = 2, lr: float = 32, loader=None):
     """Quantization-aware online updates using the binary-weight error signal."""
     global shadow_weight
     if shadow_weight is None:
@@ -199,7 +199,7 @@ def online_learning(epochs: int = 2, lr: float = 64, loader=None):
                 samples = samples.to(device)
                 labels = labels.to(device)
                 samples_hv = encode(samples)
-                model.add_online_quantized_aware(samples_hv, labels, lr=lr)
+                model.add_online_quantized_aware(samples_hv, labels, lr)
 
     # keep the updated shadow weights for future reuse
     shadow_weight = model.weight.detach().clone()
