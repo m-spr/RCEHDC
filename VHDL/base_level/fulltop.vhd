@@ -22,7 +22,11 @@ ENTITY fulltopHDC IS
 	    log2id : INTEGER := 1; --log2 of id level
 		lenTKEEP_M			:INTEGER := 1;
 		lenTDATA_S			:INTEGER := 8;
-		lenTKEEP_S			:INTEGER := 1
+		lenTKEEP_S			:INTEGER := 1;
+		
+		
+		C_S00_AXI_Lite_DATA_WIDTH : integer	:= 32;
+        C_S00_AXI_Lite_ADDR_WIDTH : integer	:= 4
 	);
     PORT
     (
@@ -37,7 +41,30 @@ ENTITY fulltopHDC IS
         TVALID_S         : OUT STD_LOGIC;         
         TLAST_S         : OUT STD_LOGIC;         
         TDATA_S  : OUT STD_LOGIC_VECTOR(lenTDATA_S-1 DOWNTO 0);
-        TKEEP_S  : OUT STD_LOGIC_VECTOR(lenTKEEP_S-1 DOWNTO 0)
+        TKEEP_S  : OUT STD_LOGIC_VECTOR(lenTKEEP_S-1 DOWNTO 0);
+        
+        s00_axi_lite_aclk	: in std_logic;
+        s00_axi_lite_aresetn	: in std_logic;
+        
+        s00_axi_lite_awaddr	: in std_logic_vector(C_S00_AXI_Lite_ADDR_WIDTH-1 downto 0);
+        s00_axi_lite_awprot	: in std_logic_vector(2 downto 0);
+        s00_axi_lite_awvalid	: in std_logic;
+        s00_axi_lite_awready	: out std_logic;
+        s00_axi_lite_wdata	: in std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH-1 downto 0);
+        s00_axi_lite_wstrb	: in std_logic_vector((C_S00_AXI_Lite_DATA_WIDTH/8)-1 downto 0);
+        s00_axi_lite_wvalid	: in std_logic;
+        s00_axi_lite_wready	: out std_logic;
+        s00_axi_lite_bresp	: out std_logic_vector(1 downto 0);
+        s00_axi_lite_bvalid	: out std_logic;
+        s00_axi_lite_bready	: in std_logic;
+        s00_axi_lite_araddr	: in std_logic_vector(C_S00_AXI_Lite_ADDR_WIDTH-1 downto 0);
+        s00_axi_lite_arprot	: in std_logic_vector(2 downto 0);
+        s00_axi_lite_arvalid	: in std_logic;
+        s00_axi_lite_arready	: out std_logic;
+        s00_axi_lite_rdata	: out std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH-1 downto 0);
+        s00_axi_lite_rresp	: out std_logic_vector(1 downto 0);
+        s00_axi_lite_rvalid	: out std_logic;
+        s00_axi_lite_rready	: in std_logic
     );
 END ENTITY fulltopHDC;
 
@@ -72,6 +99,36 @@ component OTFGEn IS
         classIndex  : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
     );
 END component;
+
+component mmio_handler is
+        generic (
+            C_S_AXI_DATA_WIDTH	: integer	:= 32;
+            C_S_AXI_ADDR_WIDTH	: integer	:= 4
+        );
+        port (
+            S_AXI_ACLK	    : in std_logic;
+            S_AXI_ARESETN	: in std_logic;
+            S_AXI_AWADDR	: in std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
+            S_AXI_AWPROT	: in std_logic_vector(2 downto 0);
+            S_AXI_AWVALID	: in std_logic;
+            S_AXI_AWREADY	: out std_logic;
+            S_AXI_WDATA	    : in std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+            S_AXI_WSTRB	    : in std_logic_vector((C_S_AXI_DATA_WIDTH/8)-1 downto 0);
+            S_AXI_WVALID	: in std_logic;
+            S_AXI_WREADY	: out std_logic;
+            S_AXI_BRESP	    : out std_logic_vector(1 downto 0);
+            S_AXI_BVALID	: out std_logic;
+            S_AXI_BREADY	: in std_logic;
+            S_AXI_ARADDR	: in std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
+            S_AXI_ARPROT	: in std_logic_vector(2 downto 0);
+            S_AXI_ARVALID	: in std_logic;
+            S_AXI_ARREADY	: out std_logic;
+            S_AXI_RDATA	    : out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+            S_AXI_RRESP	    : out std_logic_vector(1 downto 0);
+            S_AXI_RVALID	: out std_logic;
+            S_AXI_RREADY	: in std_logic
+        );
+    end component mmio_handler;
 
 COMPONENT regOne IS
 	GENERIC (init : STD_LOGIC := '1');   -- initial value
@@ -109,6 +166,34 @@ attribute MARK_DEBUG of ns : signal is "TRUE";
       
 BEGIN
 --rstl <= not(rst);
+mmio_handler_inst : mmio_handler
+    generic map (
+        C_S_AXI_DATA_WIDTH	=> C_S00_AXI_Lite_DATA_WIDTH,
+        C_S_AXI_ADDR_WIDTH	=> C_S00_AXI_Lite_ADDR_WIDTH
+    )
+    port map (
+        S_AXI_ACLK	    => s00_axi_lite_aclk,    -- AXI Clock
+        S_AXI_ARESETN	=> s00_axi_lite_aresetn, -- AXI Reset
+        S_AXI_AWADDR	=> s00_axi_lite_awaddr,
+        S_AXI_AWPROT	=> s00_axi_lite_awprot,
+        S_AXI_AWVALID	=> s00_axi_lite_awvalid,
+        S_AXI_AWREADY	=> s00_axi_lite_awready,
+        S_AXI_WDATA	    => s00_axi_lite_wdata,
+        S_AXI_WSTRB	    => s00_axi_lite_wstrb,
+        S_AXI_WVALID	=> s00_axi_lite_wvalid,
+        S_AXI_WREADY	=> s00_axi_lite_wready,
+        S_AXI_BRESP	    => s00_axi_lite_bresp,
+        S_AXI_BVALID	=> s00_axi_lite_bvalid,
+        S_AXI_BREADY	=> s00_axi_lite_bready,
+        S_AXI_ARADDR	=> s00_axi_lite_araddr,
+        S_AXI_ARPROT	=> s00_axi_lite_arprot,
+        S_AXI_ARVALID	=> s00_axi_lite_arvalid,
+        S_AXI_ARREADY	=> s00_axi_lite_arready,
+        S_AXI_RDATA	    => s00_axi_lite_rdata,
+        S_AXI_RRESP	    => s00_axi_lite_rresp,
+        S_AXI_RVALID	=> s00_axi_lite_rvalid,
+        S_AXI_RREADY	=> s00_axi_lite_rready
+    );
 
     HDCOTFGEn: OTFGEn 
     GENERIC MAP
