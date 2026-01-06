@@ -188,7 +188,46 @@ class Centroid(nn.Module):
         return "in_features={}, out_features={}".format(
             self.in_features, self.out_features is not None
         )
+    
+    @torch.no_grad()
+    def add_online_quantized_aware(self, input: Tensor, target: Tensor, lr: int) -> None:
+        # binary weights as +/-1 ints
+        binary_weight = self.weight.sign().to(torch.int64)
+        binary_weight[binary_weight == 0] = 1
 
+        # assume input is already 2D: [batch, D]; still use int view
+        input_int = input.to(torch.int64)
+
+        # Hamming similarity per class (vector op)
+        logit = functional.hamming_similarity(input_int, binary_weight)
+
+        # vector argmax
+        pred = logit.argmax(1)
+        is_wrong = target != pred
+        if not is_wrong.item():
+            return
+
+        D = self.in_features
+        
+        # single sample (batch size = 1)
+        x = input_int[0]            # shape [D]
+        t = target[0].item()
+        p = pred[0].item()
+
+        # scalar scores
+        target_score = logit[0, t]
+        pred_score = logit[0, p]
+
+        alpha1_num = D - target_score
+        alpha2_num = pred_score - D
+
+        # vector-scalar mul/div with trunc
+        update_t = torch.div(lr * alpha1_num * x, D, rounding_mode="trunc")
+        update_p = torch.div(lr * alpha2_num * x, D, rounding_mode="trunc")
+
+        # scatter-add into weight vectors
+        self.weight[t] += update_t.to(self.weight.dtype)
+        self.weight[p] += update_p.to(self.weight.dtype)
 
 class IntRVFL(nn.Module):
     r"""Class implementing integer random vector functional link network (intRVFL) model as described in `Density Encoding Enables Resource-Efficient Randomly Connected Neural Networks <https://doi.org/10.1109/TNNLS.2020.3015971>`_.
@@ -263,7 +302,7 @@ class IntRVFL(nn.Module):
         encodings = self.encode(x)
 
         # Get similarity values for each class
-        return functional.dot_similarity(encodings, self.weight)
+        return functional.cosine_similarity(encodings, self.weight)
 
     # Train the model
     @torch.no_grad()
