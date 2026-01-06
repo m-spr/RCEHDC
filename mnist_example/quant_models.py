@@ -190,37 +190,44 @@ class Centroid(nn.Module):
         )
     
     @torch.no_grad()
-    def add_online_quantized_aware(self, input: Tensor, target: Tensor, lr: float = 1.0) -> None:
-        # Fully integer-aware variant: operate on integer views and avoid fractional updates
-        binary_weight = self.weight.to(torch.int64).sign()
+    def add_online_quantized_aware(self, input: Tensor, target: Tensor, lr: int) -> None:
+        # binary weights as +/-1 ints
+        binary_weight = self.weight.sign().to(torch.int64)
         binary_weight[binary_weight == 0] = 1
 
+        # assume input is already 2D: [batch, D]; still use int view
         input_int = input.to(torch.int64)
+
+        # Hamming similarity per class (vector op)
         logit = functional.hamming_similarity(input_int, binary_weight)
 
+        # vector argmax
         pred = logit.argmax(1)
         is_wrong = target != pred
-        if is_wrong.sum().item() == 0:
+        if not is_wrong.item():
             return
 
-        logit_wrong = logit[is_wrong]
-        input_wrong = input_int[is_wrong]
-        target_wrong = target[is_wrong]
-        pred_wrong = pred[is_wrong]
-
         D = self.in_features
-        target_scores = logit_wrong.gather(1, target_wrong.unsqueeze(1))
-        pred_scores = logit_wrong.gather(1, pred_wrong.unsqueeze(1))
+        
+        # single sample (batch size = 1)
+        x = input_int[0]            # shape [D]
+        t = target[0].item()
+        p = pred[0].item()
 
-        alpha1_num = D - target_scores
-        alpha2_num = pred_scores - D
+        # scalar scores
+        target_score = logit[0, t]
+        pred_score = logit[0, p]
 
-        lr_int = int(lr)
-        update_target = torch.div(lr_int * alpha1_num * input_wrong, D, rounding_mode="trunc")
-        update_pred = torch.div(lr_int * alpha2_num * input_wrong, D, rounding_mode="trunc")
+        alpha1_num = D - target_score
+        alpha2_num = pred_score - D
 
-        self.weight.index_add_(0, target_wrong, update_target.to(self.weight.dtype))
-        self.weight.index_add_(0, pred_wrong, update_pred.to(self.weight.dtype))
+        # vector-scalar mul/div with trunc
+        update_t = torch.div(lr * alpha1_num * x, D, rounding_mode="trunc")
+        update_p = torch.div(lr * alpha2_num * x, D, rounding_mode="trunc")
+
+        # scatter-add into weight vectors
+        self.weight[t] += update_t.to(self.weight.dtype)
+        self.weight[p] += update_p.to(self.weight.dtype)
 
 class IntRVFL(nn.Module):
     r"""Class implementing integer random vector functional link network (intRVFL) model as described in `Density Encoding Enables Resource-Efficient Randomly Connected Neural Networks <https://doi.org/10.1109/TNNLS.2020.3015971>`_.
