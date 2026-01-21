@@ -14,8 +14,8 @@ recho () {
   echo -e "${RED}$1${NC}"
 }
 
-export VIVADO_PATH="/Software/xilinx/Vivado"
-export VIVADO_VERSION="2022.1"
+export VIVADO_PATH="/tools/Xilinx/Vivado"
+export VIVADO_VERSION="2022.2"
 PROJECT_DIR=$1
 
 if [ -z "$VIVADO_PATH" ];then

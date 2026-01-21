@@ -99,7 +99,7 @@ BEGIN
                 END IF;
 
             WHEN counting =>
-                IF count = STD_LOGIC_VECTOR(to_UNSIGNED(n , lgn)) THEN 
+                IF count = STD_LOGIC_VECTOR(to_UNSIGNED(n - 1, lgn)) THEN 
                     done <= '1';
                     IF run = '1' THEN
                         countRst <= '1';

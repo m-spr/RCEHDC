@@ -149,8 +149,10 @@ num_classes = len(train_ds.classes)
 model = Centroid(DIMENSIONS, num_classes)
 model = model.to(device)
 shadow_weight = None
+trained_weight = None
 
 def train():
+    global shadow_weight, trained_weight
     with torch.no_grad():
         for samples, labels in tqdm(train_ld, desc="Training"):
             samples = samples.to(device)
@@ -158,9 +160,9 @@ def train():
 
             samples_hv = encode(samples)
             model.add(samples_hv, labels)
-    global shadow_weight
-    if shadow_weight is None:
-        shadow_weight = model.weight.detach().clone()
+    # Preserve post-training weights separately to avoid online updates overwriting them.
+    trained_weight = model.weight.detach().clone()
+    shadow_weight = trained_weight.clone()
 
 def test():
     accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)

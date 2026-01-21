@@ -139,6 +139,19 @@ def write_memory(path, dimensions, levels, lfsr=True):
             output.write("\n")
         output.write(";")
 
+
+def write_trained_weight(path):
+    """Write integer class hypervectors to a decimal COE."""
+    weights = torch.load(path + "/model/chvs.pt")
+    flat = weights.detach().cpu().view(-1).int().tolist()
+
+    with open(path + "/mem/trained_weight_dec.coe", "w") as f:
+        f.write("memory_initialization_radix=10;\n")
+        f.write("memory_initialization_vector=\n")
+        for i, v in enumerate(flat):
+            sep = ",\n" if i < len(flat) - 1 else ";\n"
+            f.write(f"{v}{sep}")
+
 def gen_sparsemodule(path, ls, DIMENSIONS):
     os.system('touch '+path+'/connector.vhd')
     f = open(path+'/connector.vhd', "w")

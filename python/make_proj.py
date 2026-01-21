@@ -123,6 +123,7 @@ else:
     CHVS = ' '.join(glob(args.project_dir+"mem/normal/*.mif"))
 
 genMem.write_memory(args.project_dir, DIMENSIONS, NUM_LEVELS, lfsr=LFSR)
+genMem.write_trained_weight(args.project_dir)
 
 with open(PROJECT_DIR+"hdc_config.json", "w") as f:
     config = json.dump(hdc_config, f)
@@ -205,6 +206,7 @@ else:
     +HDC_DIR+"/base_level/hdcTest.vhd "
     # +HDC_DIR+"/base_level/hvTOcompIn.vhd " #deprecated
     +HDC_DIR+"/base_level/id_level.vhd "
+    +HDC_DIR+"/base_level/mmio_handler.vhd "
     +HDC_DIR+"/base_level/popCount.vhd "
     +HDC_DIR+"/base_level/recMux.vhd "
     +HDC_DIR+"/base_level/reg.vhd "
@@ -326,7 +328,7 @@ print("6. Run Synthesis")
 # log = open(args.project_dir+"run_synthesis.log", "w")
 launch_synth = template.launch_synth
 with open(args.project_dir+"launch_synth.tcl", "w") as f:
-    f.write(create_bd)
+    f.write(launch_synth)
 process.stdin.write(launch_synth.encode('utf-8'))
 process.stdin.flush()
 read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "synthesis")
@@ -337,7 +339,7 @@ read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/synth_1/runme.log
 print("7. Run Implementation")
 # log = open(args.project_dir+"launch_implementation.log", "w")
 launch_impl = template.launch_impl
-with open(args.project_dir+"launch_synth.tcl", "w") as f:
+with open(args.project_dir+"launch_impl.tcl", "w") as f:
         f.write(launch_impl)
 process.stdin.write(launch_impl.encode('utf-8'))
 process.stdin.flush()

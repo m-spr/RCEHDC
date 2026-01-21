@@ -22,8 +22,8 @@ set_property target_language VHDL [current_project]
 import_files -norecurse $CHVS
 import_files -norecurse $SOURCEFILES
 if {$VIVADO_VERSION == "2022.2"} {
-  -Auto-update_compile_order -fileset sources_1
-  -Auto-update_compile_order -fileset sources_1
+  update_compile_order -fileset sources_1
+  update_compile_order -fileset sources_1
 } else {
   update_compile_order -fileset sources_1
   update_compile_order -fileset sources_1

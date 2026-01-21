@@ -12,3 +12,5 @@ test*
 *.xpr
 *.xml
 .Xil/
+/mnist_example
+/VHDL/IP_Files

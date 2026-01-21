@@ -158,7 +158,7 @@ BEGIN
     PROCESS(clk) 
     BEGIN 
         IF rising_edge(clk) THEN
-            IF (rst = '1') THEN
+            IF (rst = '0') THEN
                 ps <= init; 
             ELSE  
                 ps <= ns;  
