@@ -29,7 +29,9 @@ ENTITY OTFGEn IS
         done                       : OUT STD_LOGIC;
         TLAST_S, TVALID_S, ready_M : OUT STD_LOGIC;
         --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
-        classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
+        classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+        ground_truth               : IN  INTEGER;
+        learning                    : in std_logic
     );
 END ENTITY OTFGEn;
 
@@ -102,7 +104,13 @@ ARCHITECTURE behavioral OF OTFGEn IS
             hv                      : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;
             pointer                 : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
-            classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
+            classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+            updated_truth           : IN std_logic_vector (d-1 downto 0);
+            updated_predicition     : IN std_logic_vector (d-1 downto 0);
+            ground_truth            : IN integer;
+            currentScore            : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+            currentClassIdx         : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+            predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0)
         );
     END COMPONENT classifier;
 
@@ -131,6 +139,25 @@ ARCHITECTURE behavioral OF OTFGEn IS
         );
     END COMPONENT reg;
 
+    COMPONENT learningTop IS
+        GENERIC (
+            d           : INTEGER := 1000;
+            num_classes : INTEGER := 10
+        );
+        PORT (
+            clk                  : IN  STD_LOGIC;
+            rst                  : IN  STD_LOGIC;
+            correct_label        : IN  INTEGER;                          --ground truth label
+            predicted_label      : IN  INTEGER;                          --predicted label
+            similarity_correct   : IN  INTEGER;                          --hamming distance to correct class vector
+            similarity_incorrect : IN  INTEGER;                          --hamming distance to predicted class vector
+            qhv                  : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --wrongly predicted query vector
+            binary_correct       : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --binarized updated correct class weights
+            binary_predicted     : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --binarized updated predicted class weights
+            done                 : OUT STD_LOGIC
+        );
+    END COMPONENT learningTop;
+
     SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop : STD_LOGIC;
     SIGNAL QHV                                                      : std_logic_vector(d - 1 DOWNTO 0);
     SIGNAL query_checker                                            : std_logic_vector(d - 1 DOWNTO 0);
@@ -144,10 +171,17 @@ ARCHITECTURE behavioral OF OTFGEn IS
     SIGNAL divToClass  : std_logic_vector(adI - 1 DOWNTO 0);
     SIGNAL pointer     : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL counter     : STD_LOGIC_VECTOR(lgf - 1 DOWNTO 0);
-    SIGNAL classIndexI : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+    SIGNAL classIndexCorrect : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
     CONSTANT encodeVecZero : STD_LOGIC_VECTOR(adI * (2 ** n) - d - 1 DOWNTO 0) := (OTHERS => '0');
     SIGNAL indexdatamem   : STD_LOGIC_VECTOR(14 DOWNTO 0);
     SIGNAL indexdatamem11 : STD_LOGIC_VECTOR(12 DOWNTO 0);
+
+    SIGNAL binary_correct       : std_logic_vector(d - 1 DOWNTO 0); --binarized updated correct class weights
+    SIGNAL binary_predicted     : std_logic_vector(d - 1 DOWNTO 0); --binarized updated predicted class weights
+    SIGNAL currentScore         : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL currentClassIdx      : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL predictedClassScore  : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL groundTruthScore         : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
 
     FILE file_VECTORS : text;
     SIGNAL bvrst : std_logic;
@@ -208,7 +242,37 @@ BEGIN
             clk, rst, doneEncoderToClassifier,
             encoderTodiv,
             done, TLAST_S, TVALID_S, pointer,
-            classIndex
+            classIndex,
+            binary_correct,
+            binary_predicted,
+            ground_truth,
+            currentScore,
+            currentClassIdx,
+            predictedClassScore
+
         );
+        
+    learn_inst: learningTop
+        GENERIC MAP (d, c)
+        PORT MAP (
+            clk, rst,
+            ground_truth,
+            to_integer(signed(classIndex)),
+            to_integer(unsigned(predictedClassScore)),
+            to_integer(unsigned(groundTruthScore)),
+            QHV,
+            binary_correct,
+            binary_predicted,
+            done
+        );
+
+    PROCESS (clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF (to_integer(unsigned(currentClassIdx)) = ground_truth) THEN
+                groundTruthScore <= currentScore;
+            END IF;
+        END IF;
+    END PROCESS;
 
 END ARCHITECTURE behavioral;

@@ -79,7 +79,11 @@ ENTITY mmio_handler IS
         S_AXI_RVALID  : OUT std_logic;
         -- Read ready. This signal indicates that the master can
         -- accept the read data and response information.
-        S_AXI_RREADY  : IN  std_logic
+        S_AXI_RREADY  : IN  std_logic;
+        
+        -- User register outputs
+        reg0_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+        reg1_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0)
     );
 END ENTITY mmio_handler;
 
@@ -128,6 +132,11 @@ BEGIN
     S_AXI_RDATA   <= axi_rdata;
     S_AXI_RRESP   <= axi_rresp;
     S_AXI_RVALID  <= axi_rvalid;
+    
+    -- Connect register outputs
+    reg0_out <= slv_reg0;
+    reg1_out <= slv_reg1;
+    
     -- Implement axi_awready generation
     -- axi_awready is asserted for one S_AXI_ACLK clock cycle when both
     -- S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_awready is

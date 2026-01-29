@@ -37,7 +37,13 @@ ENTITY countingSimTop IS
         hv            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
         done          : OUT STD_LOGIC;
         pointer       : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
-        dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0)
+        dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0);
+        
+        updated_truth           : IN std_logic_vector (d-1 downto 0);
+        updated_predicition     : IN std_logic_vector (d-1 downto 0);
+        ground_truth            : IN integer;
+        predicted_label         : IN integer
+
     );
 END ENTITY countingSimTop;
 

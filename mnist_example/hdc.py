@@ -152,7 +152,6 @@ shadow_weight = None
 trained_weight = None
 
 def train():
-    global shadow_weight, trained_weight
     with torch.no_grad():
         for samples, labels in tqdm(train_ld, desc="Training"):
             samples = samples.to(device)
@@ -160,9 +159,15 @@ def train():
 
             samples_hv = encode(samples)
             model.add(samples_hv, labels)
-    # Preserve post-training weights separately to avoid online updates overwriting them.
-    trained_weight = model.weight.detach().clone()
-    shadow_weight = trained_weight.clone()
+    global shadow_weight
+    if shadow_weight is None:
+        shadow_weight = model.weight.detach().clone()
+    torch.save(model.weight,                path+"/model/int_weights.pt")
+
+    # Print first 10 values of each element in trained_weight
+    #print("First 10 values of each trained weight element:")
+    #for i, w in enumerate(trained_weight):
+    #    print(f"Class {i}: {w[:10]}")
 
 def test():
     accuracy = torchmetrics.Accuracy("multiclass", num_classes=num_classes)

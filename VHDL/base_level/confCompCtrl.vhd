@@ -9,7 +9,9 @@ ENTITY confCompCtrl IS
         clk, rst                        : IN  STD_LOGIC;
         run                             : IN  STD_LOGIC;
         runOut, done, TLAST_S, TVALID_S : OUT STD_LOGIC;
-        pointer                         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0) --- As of now only support up to 16 classes so 4'bits 
+        pointer                         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0); --- As of now only support up to 16 classes so 4'bits
+        equal                           : IN  STD_LOGIC;  --- NEW: signal indicating comparator equality
+        learning_done                   : IN  STD_LOGIC  --- NEW: learning completion signal 
     );
 END ENTITY confCompCtrl;
 
@@ -23,7 +25,7 @@ ARCHITECTURE ctrl OF confCompCtrl IS
         );
     END COMPONENT popCount;
     SIGNAL count : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
-    TYPE state IS (init, counting, busshand);
+    TYPE state IS (init, counting, busshand, learning);
     SIGNAL ns, ps            : state;
     SIGNAL countEn, countRst : STD_LOGIC;
 BEGIN
@@ -57,7 +59,7 @@ BEGIN
                     ns <= init;
                 END IF;
             WHEN counting =>
-                IF (count = STD_LOGIC_VECTOR(to_UNSIGNED(n, lgn))) THEN --- perhaps -1 is extra! check
+                IF (count = STD_LOGIC_VECTOR(to_UNSIGNED(n, lgn)) and not equal) THEN --- perhaps -1 is extra! check
                     done <= '1';
                     IF (run = '1') THEN
                         countRst <= '1';
@@ -66,9 +68,17 @@ BEGIN
                     ELSE
                         ns <= busshand;
                     END IF;
+                ELSIF (count = STD_LOGIC_VECTOR(to_UNSIGNED(n, lgn)) and equal) THEN
+                ns <= learning;    
                 ELSE
                     countEn <= '1';
                     ns <= counting;
+                END IF;
+            WHEN learning =>
+                IF(learning_done = '1') THEN
+                    ns <= busshand;
+                ELSE
+                    ns <= learning;    
                 END IF;
             WHEN busshand =>
                 TLAST_S <= '1';

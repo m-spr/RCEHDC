@@ -11,7 +11,11 @@ ENTITY comparatorTop IS
         clk, rst, run           : IN  STD_LOGIC;
         a                       : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0); --- 16 = 2**4 ,,, 4 is LOG2(n)
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;                              --- final result is ready 
-        classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0)      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
+        classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
+    
+        currentScore            : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+        currentClassIdx         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
+        predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
     );
 END ENTITY comparatorTop;
 
@@ -77,6 +81,9 @@ ARCHITECTURE behavioral OF comparatorTop IS
     ATTRIBUTE MARK_DEBUG OF muxOut       : SIGNAL IS "TRUE";
 BEGIN
     muxIn <= a & zero_muxin; ------- check!!!
+    currentScore    <= muxOut;
+    currentClassIdx <= muxSel;
+    predictedClassScore <= toComp;
 
     ctrl: confCompCtrl
         GENERIC MAP (n, lgn)

@@ -142,7 +142,7 @@ def write_memory(path, dimensions, levels, lfsr=True):
 
 def write_trained_weight(path):
     """Write integer class hypervectors to a decimal COE."""
-    weights = torch.load(path + "/model/chvs.pt")
+    weights = torch.load(path + "/model/int_weights.pt")
     flat = weights.detach().cpu().view(-1).int().tolist()
 
     with open(path + "/mem/trained_weight_dec.coe", "w") as f:

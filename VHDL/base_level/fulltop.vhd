@@ -92,7 +92,9 @@ ARCHITECTURE behavioral OF fulltopHDC IS
             done                       : OUT STD_LOGIC;
             TLAST_S, TVALID_S, ready_M : OUT STD_LOGIC;
             --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
-            classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
+            classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+            ground_truth               : IN integer;
+            learning                   : IN std_logic 
         );
     END COMPONENT OTFGEn;
 
@@ -122,7 +124,9 @@ component mmio_handler is
             S_AXI_RDATA	    : out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
             S_AXI_RRESP	    : out std_logic_vector(1 downto 0);
             S_AXI_RVALID	: out std_logic;
-            S_AXI_RREADY	: in std_logic
+            S_AXI_RREADY	: in std_logic;
+            reg0_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg1_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0)
         );
     end component mmio_handler;
 
@@ -142,6 +146,9 @@ component mmio_handler is
     SIGNAL rstl, run, done : STD_LOGIC;
     SIGNAL outreg0         : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
     SIGNAL pixelreg        : STD_LOGIC_VECTOR(pixbit - 1 DOWNTO 0);
+    
+    SIGNAL ground_truth    : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL reg1_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
 
     TYPE state IS (init, registering);
     SIGNAL ns, ps : state;
@@ -187,7 +194,9 @@ mmio_handler_inst : mmio_handler
         S_AXI_RDATA	    => s00_axi_lite_rdata,
         S_AXI_RRESP	    => s00_axi_lite_rresp,
         S_AXI_RVALID	=> s00_axi_lite_rvalid,
-        S_AXI_RREADY	=> s00_axi_lite_rready
+        S_AXI_RREADY	=> s00_axi_lite_rready,
+        reg0_out        => ground_truth,
+        reg1_out        => reg1_out
     );
     HDCOTFGEn: OTFGEn
         GENERIC MAP (
@@ -196,12 +205,11 @@ mmio_handler_inst : mmio_handler
         PORT MAP (
             clk, rst, run,
             pixelIn, done, TLAST_S, TVALID_S, TREADY_M,
-            classIndex
+            classIndex, TO_INTEGER(signed(ground_truth)), reg1_out(0)
         );
 
     pixelIn <= TDATA_M;
     run     <= TVALID_M;
-
     --TREADY_M <= not(TLAST_M);
     ---TREADY_M <= '1';
     TDATA_S <= "0000" & classIndex;

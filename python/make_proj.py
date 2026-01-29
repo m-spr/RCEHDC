@@ -215,7 +215,9 @@ else:
     +HDC_DIR+"/base_level/SeqAdder.vhd "
     +HDC_DIR+"/base_level/SeqAdderCtrl.vhd "
     +HDC_DIR+"/base_level/XoringInputPop.vhd "
-    +HDC_DIR+"/base_level/XoringPopCtrl.vhd")
+    +HDC_DIR+"/base_level/XoringPopCtrl.vhd "
+    +HDC_DIR+"/base_level/learningTop.vhd "
+    +HDC_DIR+"/base_level/binarizer.vhd")
 
 
 print("2. Starting Vivado in TCL Mode")

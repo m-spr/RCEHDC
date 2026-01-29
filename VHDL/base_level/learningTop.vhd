@@ -42,7 +42,7 @@ ARCHITECTURE behavioral OF learningTop IS
         );
         PORT (
             start         : IN  std_logic;
-            int_vector    : IN  integer_vector(d - 1 DOWNTO 0);
+            value    : IN  integer;
             result_vector : OUT std_logic_vector(d - 1 DOWNTO 0)
         );
     END COMPONENT;
@@ -94,14 +94,14 @@ ARCHITECTURE behavioral OF learningTop IS
     FUNCTION scaling(
             value         : integer;
             similarity    : integer;
-            predicted_bit : std_logic;
+            qhv_bit : std_logic;
             punish        : std_logic
         ) RETURN integer IS
         VARIABLE result : integer;
         CONSTANT lr : integer := 64;
     BEGIN
         result := d - similarity;
-        IF punish = '1' XOR predicted_bit = '0' THEN
+        IF punish = '1' XOR qhv_bit = '0' THEN
             result := result * (- 1);
         END IF;
         result := (result * lr / d) + value;

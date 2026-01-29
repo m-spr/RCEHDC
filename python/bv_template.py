@@ -207,11 +207,11 @@ set_property -dict [list \
   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
   CONFIG.Write_Depth_A [expr int($DIMENSIONS*10)] \
   CONFIG.Write_Width_A 32 \
+  CONFIG.Read_Width_A 32 \
+  CONFIG.Write_Width_B 32 \
+  CONFIG.Read_Width_B 32 \
 ] [get_ips blk_mem_gen_LEARN]
-set_property -dict [list \
-  CONFIG.Write_Width_A 32 CONFIG.Write_Depth_A [expr int($DIMENSIONS*10)] CONFIG.Read_Width_A 32 \
-  CONFIG.Write_Width_B 32 CONFIG.Write_Depth_B [expr int($DIMENSIONS*10)] CONFIG.Read_Width_B 32 \
-] [get_ips blk_mem_gen_LEARN]
+set_property -dict [list CONFIG.Write_Width_A 32 CONFIG.Write_Depth_A [expr int($DIMENSIONS*10)] CONFIG.Read_Width_A 32] [get_ips blk_mem_gen_LEARN]
 
 generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci]
 update_compile_order -fileset sources_1
