@@ -18,12 +18,13 @@ ENTITY classifier IS
         pointer                 : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
         classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
         
-        updated_truth           : IN std_logic_vector (d-1 downto 0);
-        updated_predicition     : IN std_logic_vector (d-1 downto 0);
+        updated_truth           : IN std_logic_vector (999 downto 0);
+        updated_prediction     : IN std_logic_vector (999 downto 0);
         ground_truth            : IN integer;
-        currentScore            : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-        currentClassIdx         : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-        predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0)
+        predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+        groundTruthScore        : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+        update_valid            : IN STD_LOGIC;
+        update_done             : OUT STD_LOGIC
     );
 END ENTITY classifier;
 
@@ -42,9 +43,14 @@ ARCHITECTURE behavioral OF classifier IS
             pointer       : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
             dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0);
             
-            updated_truth           : IN std_logic_vector (d-1 downto 0);
-            updated_predicition     : IN std_logic_vector (d-1 downto 0);
-            ground_truth            : IN integer
+            
+            update_valid : IN STD_LOGIC;
+            update_done  : OUT STD_LOGIC;
+            updated_truth           : IN std_logic_vector (999 downto 0);
+            updated_prediction     : IN std_logic_vector (999 downto 0);
+            ground_truth            : IN integer;
+            predicted_label         : IN integer
+
         );
     END COMPONENT countingSimTop;
 
@@ -58,20 +64,24 @@ ARCHITECTURE behavioral OF classifier IS
             a                       : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0); --- 16 = 2**4 ,,, 4 is LOG2(n)
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;                              --- final result is ready 
             classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits
-            currentScore            : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-            currentClassIdx         : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-            predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0)
+            predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+            groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+            ground_truth            : IN integer            
         );
     END COMPONENT comparatorTop;
     SIGNAL hvTOcount : STD_LOGIC_VECTOR(adI - 1 DOWNTO 0);
     SIGNAL dones     : STD_LOGIC;
     SIGNAL toComp    : STD_LOGIC_VECTOR(c * (n + logn) - 1 DOWNTO 0);
     SIGNAL point     : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL classIndexI: STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+
     ATTRIBUTE MARK_DEBUG              : string;
     ATTRIBUTE MARK_DEBUG OF toComp    : SIGNAL IS "TRUE";
     ATTRIBUTE MARK_DEBUG OF hvTOcount : SIGNAL IS "TRUE";
 
 BEGIN
+    classIndex <= classIndexI;
+    
     concat: FOR I IN adI - 1 DOWNTO 0 GENERATE
         hvTOcount(I) <= hv(to_integer(unsigned(point)) + (2 ** n) * I);
     END GENERATE concat;
@@ -85,9 +95,12 @@ BEGIN
             point,
             toComp,
             
+            update_valid,
+            update_done,
             updated_truth,
-            updated_predicition,
-            ground_truth
+            updated_prediction,
+            ground_truth,
+            TO_INTEGER (unsigned (classIndexI))
         );
 
     CT: comparatorTop
@@ -96,11 +109,11 @@ BEGIN
             clk, rst, dones,
             toComp,
             done, TLAST_S, TVALID_S,
-            classIndex,
-            currentScore,
-            currentClassIdx,
-            predictedClassScore
-        );
+            classIndexI,
+            predictedClassScore,
+            groundTruthScore,
+            ground_truth
+         );
 
     pointer <= point;
 END ARCHITECTURE behavioral;

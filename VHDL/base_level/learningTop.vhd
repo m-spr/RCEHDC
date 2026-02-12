@@ -1,199 +1,263 @@
-LIBRARY ieee;
-    USE ieee.std_logic_1164.ALL;
-    USE ieee.numeric_std.ALL;
+library ieee;
 
-ENTITY learningTop IS
-    GENERIC (
-        d           : integer := 1000;
-        num_classes : integer := 10
-    );
-    PORT (
-        clk                  : IN  std_logic;
-        rst                  : IN  std_logic;
-        correct_label        : IN  integer;                          --ground truth label
-        predicted_label      : IN  integer;                          --predicted label
-        similarity_correct   : IN  integer;                          --hamming distance to correct class vector
-        similarity_incorrect : IN  integer;                          --hamming distance to predicted class vector
-        qhv                  : IN  std_logic_vector(d - 1 DOWNTO 0); --wrongly predicted query vector
-        binary_correct       : OUT std_logic_vector(d - 1 DOWNTO 0); --binarized updated correct class weights
-        binary_predicted     : OUT std_logic_vector(d - 1 DOWNTO 0); --binarized updated predicted class weights
-        done                 : OUT std_logic
-    );
-END ENTITY;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
-ARCHITECTURE behavioral OF learningTop IS
+entity learningTop is
+	generic (
+		d           : integer := 1000;
+		num_classes : integer := 10
+	);
+	port (
+		clk                  : in std_logic;
+		rst                  : in std_logic;
+		run                  : in std_logic;
+		correct_label        : in integer range 0 to num_classes-1; 	-- ground truth label
+		predicted_label      : in integer range 0 to num_classes-1; 	-- predicted label
+		similarity_correct   : in integer range 0 to d; 				-- hamming distance to correct class vector
+		similarity_incorrect : in integer range 0 to d; 				-- hamming distance to predicted class vector
+		qhv                  : in std_logic_vector (0 to d - 1); 	-- wrongly predicted query vector
+		binary_correct       : out std_logic_vector(0 to d - 1); 	-- binarized updated correct class weights
+		binary_predicted     : out std_logic_vector(0 to d - 1); 	-- binarized updated predicted class weights
+		done                 : out std_logic
+	);
+end entity;
 
-    FUNCTION clog2(n : integer) RETURN integer IS
-        VARIABLE i : integer := 0;
-        VARIABLE v : integer := n - 1;
-    BEGIN
-        WHILE v > 0 LOOP
-            v := v / 2;
-            i := i + 1;
-        END LOOP;
-        RETURN i;
-    END FUNCTION;
+architecture behavioral of learningTop is
+	function clog2(n : integer) return integer is
+		variable i : integer := 0;
+		variable v : integer := n - 1;
+	begin
+		while v > 0 loop
+			v := v / 2;
+			i := i + 1;
+		end loop;
+		return i;
+	end function;
 
-    CONSTANT addr_w : integer := clog2(d * num_classes);
+	constant addr_w : integer := clog2(d * num_classes);
 
-    COMPONENT binarizer
-        GENERIC (
-            d : integer := 1000
-        );
-        PORT (
-            start         : IN  std_logic;
-            value    : IN  integer;
-            result_vector : OUT std_logic_vector(d - 1 DOWNTO 0)
-        );
-    END COMPONENT;
+	component popCount is
+		generic (lenPop : integer := 8); -- bit width out popCounters
+		port (
+			clk  : in std_logic;
+			rst  : in std_logic;
+			en   : in std_logic;
+			dout : out std_logic_vector(lenPop - 1 downto 0)
+		);
+	end component;
 
-    COMPONENT popCount IS
-        GENERIC (lenPop : INTEGER := 8); -- bit width out popCounters
-        PORT (
-            clk, rst : IN  STD_LOGIC;
-            en       : IN  STD_LOGIC;
-            dout     : OUT STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0)
-        );
-    END COMPONENT;
+	-- This or BRAM in Block Design
+	type shadow_vector is array (0 to d - 1) of integer;
 
-    --This or BRAM in Block Design
-    TYPE shadow_vector IS ARRAY (0 TO d - 1) OF integer;
-    SIGNAL update_correct   : shadow_vector;
-    SIGNAL update_predicted : shadow_vector;
-    SIGNAL update_completed : std_logic := '0';
-    SIGNAL current_idx      : integer   := 0;
+	signal update_correct   : shadow_vector := (others => 0);
+	signal update_predicted : shadow_vector := (others => 0);
+	attribute ram_style : string;
+	attribute ram_style of update_correct : signal is "distributed";
+	attribute ram_style of update_predicted : signal is "distributed";
+	signal update_completed : std_logic := '0';
+	signal current_idx      : integer := 0;
+	signal ID               : std_logic_vector(9 downto 0);
+	signal rst_counter      : std_logic;
+	signal id_at_last       : std_logic;
+	signal counter_en       : std_logic;
 
-    COMPONENT blk_mem_gen_LEARN IS
-        PORT (
-            clka   : IN  STD_LOGIC;
-            ena    : IN  STD_LOGIC;
-            wea    : IN  STD_LOGIC_VECTOR (3 DOWNTO 0);
-            addra  : IN  STD_LOGIC_VECTOR (addr_w - 1 DOWNTO 0);
-            dina   : IN  STD_LOGIC_VECTOR (31 DOWNTO 0);
-            douta  : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-            clkb   : IN  STD_LOGIC;
-            enb    : IN  STD_LOGIC;
-            web    : IN  STD_LOGIC_VECTOR (3 DOWNTO 0);
-            addrb  : IN  STD_LOGIC_VECTOR (addr_w - 1 DOWNTO 0);
-            dinb   : IN  STD_LOGIC_VECTOR (31 DOWNTO 0);
-            doutb  : OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
-        );
-    END COMPONENT;
+	component blk_mem_gen_LEARN is
+		port (
+			clka  : in std_logic;
+			wea   : in std_logic;
+			addra : in std_logic_vector(addr_w - 1 downto 0);
+			dina  : in std_logic_vector(31 downto 0);
+			douta : out std_logic_vector(31 downto 0);
+			clkb  : in std_logic;
+			web   : in std_logic;
+			addrb : in std_logic_vector(addr_w - 1 downto 0);
+			dinb  : in std_logic_vector(31 downto 0);
+			doutb : out std_logic_vector(31 downto 0)
+		);
+	end component;
 
-    SIGNAL learn_addra  : std_logic_vector(addr_w - 1 DOWNTO 0);
-    SIGNAL learn_addrb  : std_logic_vector(addr_w - 1 DOWNTO 0);
-    SIGNAL learn_dina   : std_logic_vector(31 DOWNTO 0) := (others => '0');
-    SIGNAL learn_dinb   : std_logic_vector(31 DOWNTO 0) := (others => '0');
-    SIGNAL learn_douta  : std_logic_vector(31 DOWNTO 0);
-    SIGNAL learn_doutb  : std_logic_vector(31 DOWNTO 0);
-    SIGNAL learn_wea    : std_logic_vector(3 DOWNTO 0) := (others => '0');
-    SIGNAL learn_web    : std_logic_vector(3 DOWNTO 0) := (others => '0');
-    SIGNAL learn_ena    : std_logic := '1';
-    SIGNAL learn_enb    : std_logic := '1';
+	signal learn_addra : std_logic_vector(addr_w - 1 downto 0);
+	signal learn_addrb : std_logic_vector(addr_w - 1 downto 0);
+	signal read_addra  : std_logic_vector(addr_w - 1 downto 0);
+	signal read_addrb  : std_logic_vector(addr_w - 1 downto 0);
+	signal write_addra : std_logic_vector(addr_w - 1 downto 0) := (others => '0');
+	signal write_addrb : std_logic_vector(addr_w - 1 downto 0) := (others => '0');
+	signal learn_dina  : std_logic_vector(31 downto 0) := (others => '0');
+	signal learn_dinb  : std_logic_vector(31 downto 0) := (others => '0');
+	signal learn_douta : std_logic_vector(31 downto 0);
+	signal learn_doutb : std_logic_vector(31 downto 0);
+	signal learn_wea   : std_logic := '0';
+	signal learn_web   : std_logic := '0';
 
-    FUNCTION scaling(
-            value         : integer;
-            similarity    : integer;
-            qhv_bit : std_logic;
-            punish        : std_logic
-        ) RETURN integer IS
-        VARIABLE result : integer;
-        CONSTANT lr : integer := 64;
-    BEGIN
-        result := d - similarity;
-        IF punish = '1' XOR qhv_bit = '0' THEN
-            result := result * (- 1);
-        END IF;
-        result := (result * lr / d) + value;
-        RETURN result;
-    END FUNCTION;
+	signal pipe_valid_s1, pipe_valid_s2, pipe_valid_s3 : std_logic := '0';
+	signal pipe_idx_s1, pipe_idx_s2, pipe_idx_s3       : integer range 0 to d-1;
 
-BEGIN
+	signal delta_correct_s1   : signed(31 downto 0);
+	signal delta_predicted_s1 : signed(31 downto 0);
+	signal value_correct_s1   : signed(31 downto 0);
+	signal value_predicted_s1 : signed(31 downto 0);
 
-    PROCESS (clk)
-    BEGIN
-        IF rising_edge(clk) THEN
+	signal product_correct_s2   : signed(31 downto 0);
+	signal product_predicted_s2 : signed(31 downto 0);
+	signal value_correct_s2     : signed(31 downto 0);
+	signal value_predicted_s2   : signed(31 downto 0);
+	
+	signal wb_idx : integer range 0 to d-1 := 0;
+    signal wb_active : std_logic := '0';
 
-            -- Ensure we only run when not finished
-            IF update_completed = '0' THEN
+	signal id_d1       : integer range 0 to d-1 := 0;
+	signal bram_valid  : std_logic := '0';  
+begin
+	process (clk)
+    variable idx : integer range 0 to d-1;
+    variable delta_c, delta_p : signed(31 downto 0);
+    variable prod_c, prod_p   : signed(47 downto 0);  -- wider for multiply
+begin
+    if rising_edge(clk) then
+        if rst = '1' then
+            rst_counter      <= '1';
+            update_completed <= '0';
+            done             <= '0';
+            bram_valid       <= '0';
+            pipe_valid_s1    <= '0';
+            pipe_valid_s2    <= '0';
+            pipe_valid_s3    <= '0';
 
-                -- 1. PERFORM THE UPDATE (One index per cycle)
-                --    We use the signal 'current_idx' instead of loop variable 'i'
-                update_correct(current_idx) <= scaling(
-                    to_integer(signed(learn_douta)),
-                    similarity_correct,
-                    qhv(current_idx),
-                    '0'
+        elsif run = '1' and update_completed = '0' then
+            rst_counter <= '0';
+            id_d1      <= to_integer(unsigned(ID));
+            bram_valid  <= '1';  
+            pipe_valid_s1 <= bram_valid;
+            pipe_idx_s1   <= id_d1;
+            delta_c := to_signed(similarity_correct, 32);
+            if qhv(id_d1) = '0' then
+                delta_c := -delta_c;
+            end if;
+            delta_correct_s1   <= delta_c;
+            value_correct_s1   <= signed(learn_douta);
+
+            delta_p := to_signed(similarity_incorrect, 32);
+            if qhv(id_d1) = '1' then
+                delta_p := -delta_p;
+            end if;
+            delta_predicted_s1 <= delta_p;
+            value_predicted_s1 <= signed(learn_doutb);
+
+            pipe_valid_s2 <= pipe_valid_s1;
+            pipe_idx_s2   <= pipe_idx_s1;
+            --shift left instead of multiply
+            product_correct_s2   <= shift_left(delta_correct_s1, 6);  
+            product_predicted_s2 <= shift_left(delta_predicted_s1, 6);
+            value_correct_s2     <= value_correct_s1;
+            value_predicted_s2   <= value_predicted_s1;
+
+            pipe_valid_s3 <= pipe_valid_s2;
+            pipe_idx_s3   <= pipe_idx_s2;
+            if pipe_valid_s2 = '1' then
+                 --shift right instead of divide
+                update_correct(pipe_idx_s2)   <= to_integer(
+                    shift_right(product_correct_s2, 10) + value_correct_s2
                 );
-
-                update_predicted(current_idx) <= scaling(
-                    to_integer(signed(learn_doutb)),
-                    similarity_incorrect,
-                    qhv(current_idx),
-                    '1'
+                update_predicted(pipe_idx_s2) <= to_integer(
+                    shift_right(product_predicted_s2, 10) + value_predicted_s2
                 );
-            ELSE
-                done <= '1';
-                --binarize the updated weights 
-            END IF;
-            IF current_idx = d - 1 THEN
+            end if;
+
+            if pipe_valid_s3 = '1' and pipe_idx_s3 = d - 1 then
+                rst_counter      <= '1';
                 update_completed <= '1';
-            END IF;
-        END IF;
-    END PROCESS;
+                done             <= '0';
+            end if;
 
-    PROCESS (clk)
-    BEGIN
-        IF rising_edge(clk) THEN
-            IF rst = '1' THEN
+        elsif update_completed = '1' and wb_active = '0' then
+            wb_active <= '1';
+            wb_idx    <= 0;
+
+        elsif wb_active = '1' then
+            learn_wea  <= '1';
+            learn_web  <= '1';
+			write_addra <= std_logic_vector(
+				to_unsigned(correct_label * d + wb_idx, addr_w)
+			);
+			write_addrb <= std_logic_vector(
+				to_unsigned(predicted_label * d + wb_idx, addr_w)
+			);
+            learn_dina <= std_logic_vector(to_signed(update_correct(wb_idx), 32));
+            learn_dinb <= std_logic_vector(to_signed(update_predicted(wb_idx), 32));
+
+            if update_correct(wb_idx) >= 0 then
+                binary_correct(wb_idx) <= '1';
+            else
+                binary_correct(wb_idx) <= '0';
+            end if;
+            if update_predicted(wb_idx) >= 0 then
+                binary_predicted(wb_idx) <= '1';
+            else
+                binary_predicted(wb_idx) <= '0';
+            end if;
+
+            if wb_idx = d - 1 then
+                wb_active <= '0';
+                learn_wea <= '0';
+                learn_web <= '0';
+                done             <= '1';
                 update_completed <= '0';
-                current_idx <= 0;
-                done <= '0';
-            END IF;
-        END IF;
-    END PROCESS;
+                pipe_valid_s1    <= '0';
+                pipe_valid_s2    <= '0';
+                pipe_valid_s3    <= '0';
+            else
+                wb_idx <= wb_idx + 1;
+            end if;
+        else
+            rst_counter      <= '1';
+            update_completed <= '0';
+            done             <= '0';
+            bram_valid       <= '0';
+            pipe_valid_s1    <= '0';
+            pipe_valid_s2    <= '0';
+            pipe_valid_s3    <= '0';
+        end if;
+    end if;
+end process;
 
-    sel: popCount
-        GENERIC MAP (10)
-        PORT MAP (
-            clk, update_completed, NOT update_completed, current_idx
-        );
+	count : popCount
+		generic map (10)
+		port map (
+			clk  => clk,
+			rst  => rst_counter,
+			en   => counter_en,
+			dout => ID
+		);
 
-    binarizeCorrect: FOR i IN 0 TO d - 1 GENERATE
-        binarizer_inst: binarizer
-            PORT MAP (
-                update_completed,
-                update_correct(i),
-                binary_correct(i)
-            );
-    END GENERATE;
+	id_at_last <= '1' when unsigned(ID) = to_unsigned(d - 1, ID'length) else '0';
+	counter_en <= run and not id_at_last;
 
-    binarizePredicted: FOR i IN 0 TO d - 1 GENERATE
-        binarizer_inst: binarizer
-            PORT MAP (
-                update_completed,
-                update_predicted(i),
-                binary_predicted(i)
-            );
-    END GENERATE;
 
-    learn_addra <= std_logic_vector(to_unsigned(correct_label * d + current_idx, addr_w));
-    learn_addrb <= std_logic_vector(to_unsigned(predicted_label * d + current_idx, addr_w));
 
-    learn_mem: blk_mem_gen_LEARN
-        PORT MAP (
-            clka  => clk,
-            ena   => learn_ena,
-            wea   => learn_wea,
-            addra => learn_addra,
-            dina  => learn_dina,
-            douta => learn_douta,
-            clkb  => clk,
-            enb   => learn_enb,
-            web   => learn_web,
-            addrb => learn_addrb,
-            dinb  => learn_dinb,
-            doutb => learn_doutb
-        );
+	read_addra <= std_logic_vector(
+		to_unsigned(correct_label * d + to_integer(unsigned(ID)), addr_w)
+	);
+	read_addrb <= std_logic_vector(
+		to_unsigned(predicted_label * d + to_integer(unsigned(ID)), addr_w)
+	);
 
-END ARCHITECTURE;
+	learn_addra <= write_addra when wb_active = '1' else read_addra;
+	learn_addrb <= write_addrb when wb_active = '1' else read_addrb;
+
+	learn_mem : blk_mem_gen_LEARN
+		port map (
+			clka  => clk,
+			wea   => learn_wea,
+			addra => learn_addra,
+			dina  => learn_dina,
+			douta => learn_douta,
+			clkb  => clk,
+			web   => learn_web,
+			addrb => learn_addrb,
+			dinb  => learn_dinb,
+			doutb => learn_doutb
+		);
+end architecture;
+
+

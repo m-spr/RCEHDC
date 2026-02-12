@@ -13,10 +13,10 @@ ENTITY comparatorTop IS
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;                              --- final result is ready 
         classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
     
-        currentScore            : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-        currentClassIdx         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
-        predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
-    );
+        predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+        groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+        ground_truth            : IN integer
+        );
 END ENTITY comparatorTop;
 
 ARCHITECTURE behavioral OF comparatorTop IS
@@ -43,7 +43,7 @@ ARCHITECTURE behavioral OF comparatorTop IS
             clk, rst                        : IN  STD_LOGIC;
             run                             : IN  STD_LOGIC;
             runOut, done, TLAST_S, TVALID_S : OUT STD_LOGIC;
-            pointer                         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0) --- As of now only support up to 16 classes so 4'bits 
+            pointer                         : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0) --- As of now only support up to 16 classes so 4'bits
         );
     END COMPONENT confCompCtrl;
     COMPONENT reg IS
@@ -66,6 +66,7 @@ ARCHITECTURE behavioral OF comparatorTop IS
     END COMPONENT reg1;
 
     SIGNAL muxSel                    : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
+    SIGNAL muxSelClassIdx            : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
     SIGNAL classIndexI, classIndexI2 : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
     SIGNAL muxSelE                   : STD_LOGIC_VECTOR(lgn DOWNTO 0);
     SIGNAL muxOut, toComp, fromComp  : STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
@@ -81,9 +82,6 @@ ARCHITECTURE behavioral OF comparatorTop IS
     ATTRIBUTE MARK_DEBUG OF muxOut       : SIGNAL IS "TRUE";
 BEGIN
     muxIn <= a & zero_muxin; ------- check!!!
-    currentScore    <= muxOut;
-    currentClassIdx <= muxSel;
-    predictedClassScore <= toComp;
 
     ctrl: confCompCtrl
         GENERIC MAP (n, lgn)
@@ -121,4 +119,20 @@ BEGIN
     done         <= doneI;
     muxSelE      <= '0' & muxSel;
     classIndexI2 <= std_logic_vector(unsigned(n - 1 - unsigned(classIndexI)));
+    muxSelClassIdx <= std_logic_vector(unsigned(n - 1 - unsigned(muxSel)));
+
+    process(clk)
+    begin
+        if(to_integer(unsigned(muxSelClassIdx)) = ground_truth) then
+            groundTruthScore <= muxOut;
+        end if;
+    end process;
+
+    process(doneI)
+    begin
+        IF doneI = '1' THEN
+            predictedClassScore <= toComp;
+        END IF;
+    end process;
+    
 END ARCHITECTURE behavioral;

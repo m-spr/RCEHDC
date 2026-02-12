@@ -174,8 +174,8 @@ mmio_handler_inst : mmio_handler
         C_S_AXI_ADDR_WIDTH	=> C_S00_AXI_Lite_ADDR_WIDTH
     )
     port map (
-        S_AXI_ACLK	    => s00_axi_lite_aclk,    -- AXI Clock
-        S_AXI_ARESETN	=> s00_axi_lite_aresetn, -- AXI Reset
+        S_AXI_ACLK	    => clk,    
+        S_AXI_ARESETN	=> rst,   
         S_AXI_AWADDR	=> s00_axi_lite_awaddr,
         S_AXI_AWPROT	=> s00_axi_lite_awprot,
         S_AXI_AWVALID	=> s00_axi_lite_awvalid,
@@ -205,7 +205,7 @@ mmio_handler_inst : mmio_handler
         PORT MAP (
             clk, rst, run,
             pixelIn, done, TLAST_S, TVALID_S, TREADY_M,
-            classIndex, TO_INTEGER(signed(ground_truth)), reg1_out(0)
+            classIndex, TO_INTEGER(unsigned(ground_truth)), reg1_out(0)
         );
 
     pixelIn <= TDATA_M;

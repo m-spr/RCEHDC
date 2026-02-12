@@ -105,13 +105,14 @@ ARCHITECTURE behavioral OF OTFGEn IS
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;
             pointer                 : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
             classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
-            updated_truth           : IN std_logic_vector (d-1 downto 0);
-            updated_predicition     : IN std_logic_vector (d-1 downto 0);
+            updated_truth           : IN std_logic_vector (999 downto 0);
+            updated_prediction     : IN std_logic_vector (999 downto 0);
             ground_truth            : IN integer;
-            currentScore            : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-            currentClassIdx         : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-            predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0)
-        );
+            predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+            groundTruthScore        : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+            update_valid            : IN STD_LOGIC;
+            update_done             : OUT STD_LOGIC
+            );
     END COMPONENT classifier;
 
     COMPONENT hvTOcompIn IS
@@ -147,6 +148,7 @@ ARCHITECTURE behavioral OF OTFGEn IS
         PORT (
             clk                  : IN  STD_LOGIC;
             rst                  : IN  STD_LOGIC;
+            run                  : IN  STD_LOGIC;
             correct_label        : IN  INTEGER;                          --ground truth label
             predicted_label      : IN  INTEGER;                          --predicted label
             similarity_correct   : IN  INTEGER;                          --hamming distance to correct class vector
@@ -160,6 +162,7 @@ ARCHITECTURE behavioral OF OTFGEn IS
 
     SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop : STD_LOGIC;
     SIGNAL QHV                                                      : std_logic_vector(d - 1 DOWNTO 0);
+    SIGNAL QHV_reg                                                  : std_logic_vector(d - 1 DOWNTO 0) := (others => '0');
     SIGNAL query_checker                                            : std_logic_vector(d - 1 DOWNTO 0);
     SIGNAL encoderTodiv                                             : std_logic_vector(adI * (2 ** n) - 1 DOWNTO 0);
     SIGNAL idLevelOut                                               : std_logic_vector(d - 1 DOWNTO 0);
@@ -176,12 +179,16 @@ ARCHITECTURE behavioral OF OTFGEn IS
     SIGNAL indexdatamem   : STD_LOGIC_VECTOR(14 DOWNTO 0);
     SIGNAL indexdatamem11 : STD_LOGIC_VECTOR(12 DOWNTO 0);
 
-    SIGNAL binary_correct       : std_logic_vector(d - 1 DOWNTO 0); --binarized updated correct class weights
-    SIGNAL binary_predicted     : std_logic_vector(d - 1 DOWNTO 0); --binarized updated predicted class weights
-    SIGNAL currentScore         : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-    SIGNAL currentClassIdx      : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL binary_correct       : std_logic_vector(999 DOWNTO 0); --binarized updated correct class weights
+    SIGNAL binary_predicted     : std_logic_vector(999 DOWNTO 0); --binarized updated predicted class weights
     SIGNAL predictedClassScore  : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-    SIGNAL groundTruthScore         : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL groundTruthScore     : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+    SIGNAL learningRun          : STD_LOGIC := '0';
+    SIGNAL learning_done        : STD_LOGIC;
+    SIGNAL write_done           : std_logic;
+    SIGNAL update_done          : STD_LOGIC;
+    SIGNAL TLAST_SI, TVALID_SI  : STD_LOGIC;
+    SIGNAL classIndexI          : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
 
     FILE file_VECTORS : text;
     SIGNAL bvrst : std_logic;
@@ -199,9 +206,12 @@ ARCHITECTURE behavioral OF OTFGEn IS
     ATTRIBUTE MARK_DEBUG OF counter                 : SIGNAL IS "TRUE";
     ATTRIBUTE MARK_DEBUG OF done                    : SIGNAL IS "TRUE";
 
+    SIGNAL doneEncoderToClassifier_d : STD_LOGIC := '0';
+
 BEGIN
+    classIndex <= classIndexI;
     rst          <= NOT(rstl);
-    encoderTodiv <= encodeVecZero & QHV;
+    encoderTodiv <= encodeVecZero & QHV_reg;
     rstpop1      <= '1' WHEN indexdatamem11 = "1010101110000" ELSE '0';
     rstpop       <= rstpop1 OR rst;
     indexdatamem <= indexdatamem11 & "00";
@@ -236,41 +246,84 @@ BEGIN
                   counter, QHV
         );
 
+    PROCESS (clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF rst = '1' THEN
+                QHV_reg <= (others => '0');
+            ELSE
+                QHV_reg <= QHV;
+            END IF;
+        END IF;
+    END PROCESS;
+
     cls: classifier
         GENERIC MAP (adI * (2 ** n), c, n, adI, adz, zComp, lgCn, logn)
         PORT MAP (
-            clk, rst, doneEncoderToClassifier,
-            encoderTodiv,
-            done, TLAST_S, TVALID_S, pointer,
-            classIndex,
+            clk, rst, doneEncoderToClassifier_d,  
+            encoderTodiv,  
+            done, TLAST_SI, TVALID_SI, pointer,
+            classIndexI,
             binary_correct,
             binary_predicted,
             ground_truth,
-            currentScore,
-            currentClassIdx,
-            predictedClassScore
-
+            predictedClassScore,
+            groundTruthScore,
+            learning_done,
+            update_done
         );
         
     learn_inst: learningTop
         GENERIC MAP (d, c)
         PORT MAP (
-            clk, rst,
+            clk, rst, learningRun,
+
             ground_truth,
-            to_integer(signed(classIndex)),
-            to_integer(unsigned(predictedClassScore)),
+            to_integer(unsigned(classIndexI)),
             to_integer(unsigned(groundTruthScore)),
-            QHV,
+            to_integer(unsigned(predictedClassScore)),
+            QHV_reg,
+
             binary_correct,
             binary_predicted,
-            done
+            learning_done
         );
 
     PROCESS (clk)
     BEGIN
         IF rising_edge(clk) THEN
-            IF (to_integer(unsigned(currentClassIdx)) = ground_truth) THEN
-                groundTruthScore <= currentScore;
+            IF rst = '1' THEN
+                learningRun <= '0';
+                TLAST_S <= '0';
+                TVALID_S <= '0';
+            ELSIF learningRun = '1' THEN
+                TLAST_S <= '0';
+                TVALID_S <= '0';
+                IF update_done = '1' THEN
+                    learningRun <= '0';
+                    TLAST_S <= '1';
+                    TVALID_S <= '1';
+                END IF;
+            ELSIF learning = '1' AND TVALID_SI = '1'
+                AND to_integer(unsigned(classIndexI)) /= ground_truth THEN
+                learningRun <= '1';
+                TLAST_S <= '0';
+                TVALID_S <= '0';
+            ELSE
+                learningRun <= '0';
+                TLAST_S <= TLAST_SI;
+                TVALID_S <= TVALID_SI;
+            END IF;
+        END IF;
+    END PROCESS;
+
+    PROCESS (clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF rst = '1' THEN
+                doneEncoderToClassifier_d <= '0';
+            ELSE
+                doneEncoderToClassifier_d <= doneEncoderToClassifier;
             END IF;
         END IF;
     END PROCESS;

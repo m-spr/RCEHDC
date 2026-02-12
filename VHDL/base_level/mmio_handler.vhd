@@ -22,7 +22,7 @@ ENTITY mmio_handler IS
 
         -- Global Clock Signal
         S_AXI_ACLK    : IN  std_logic;
-        -- Global Reset Signal. This Signal is Active LOW
+        -- Global Reset Signal. This Signal is Active LOW (directly from PS reset controller)
         S_AXI_ARESETN : IN  std_logic;
         -- Write address (issued by master, acceped by Slave)
         S_AXI_AWADDR  : IN  std_logic_vector(C_S_AXI_ADDR_WIDTH - 1 DOWNTO 0);
@@ -121,8 +121,13 @@ ARCHITECTURE arch_imp OF mmio_handler IS
     SIGNAL reg_data_out : std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
     SIGNAL byte_index   : integer;
     SIGNAL aw_en        : std_logic;
+    
+    -- Internal active-HIGH reset (invert the active-LOW ARESETN input)
+    SIGNAL axi_reset    : std_logic;
 
 BEGIN
+    -- Convert active-LOW reset to active-HIGH for internal use
+    axi_reset <= not S_AXI_ARESETN;
     -- I/O Connections assignments
     S_AXI_AWREADY <= axi_awready;
     S_AXI_WREADY  <= axi_wready;
@@ -141,11 +146,10 @@ BEGIN
     -- axi_awready is asserted for one S_AXI_ACLK clock cycle when both
     -- S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_awready is
 
-    -- de-asserted when reset is low.
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_awready <= '0';
                 aw_en <= '1';
             ELSE
@@ -173,7 +177,7 @@ BEGIN
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_awaddr <= (OTHERS => '0');
             ELSE
                 IF (axi_awready = '0' AND S_AXI_AWVALID = '1' AND S_AXI_WVALID = '1' AND aw_en = '1') THEN
@@ -188,11 +192,10 @@ BEGIN
     -- axi_wready is asserted for one S_AXI_ACLK clock cycle when both
     -- S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_wready is 
 
-    -- de-asserted when reset is low. 
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_wready <= '0';
             ELSE
                 IF (axi_wready = '0' AND S_AXI_WVALID = '1' AND S_AXI_AWVALID = '1' AND aw_en = '1') THEN
@@ -212,7 +215,7 @@ BEGIN
     -- The write data is accepted and written to memory mapped registers when
     -- axi_awready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted. Write strobes are used to
     -- select byte enables of slave registers while writing.
-    -- These registers are cleared when reset (active low) is applied.
+    -- These registers are cleared when reset (active high) is applied.
     -- Slave register write enable is asserted when valid address and data are available
     -- and the slave is ready to accept the write address and write data.
     slv_reg_wren <= axi_wready AND S_AXI_WVALID AND axi_awready AND S_AXI_AWVALID;
@@ -221,7 +224,7 @@ BEGIN
         VARIABLE loc_addr : std_logic_vector(OPT_MEM_ADDR_BITS DOWNTO 0);
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 slv_reg0 <= (OTHERS => '0');
                 slv_reg1 <= (OTHERS => '0');
                 slv_reg2 <= (OTHERS => '0');
@@ -282,7 +285,7 @@ BEGIN
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_bvalid <= '0';
                 axi_bresp <= "00"; --need to work more on the responses
             ELSE
@@ -299,14 +302,14 @@ BEGIN
     -- Implement axi_arready generation
     -- axi_arready is asserted for one S_AXI_ACLK clock cycle when
     -- S_AXI_ARVALID is asserted. axi_awready is 
-    -- de-asserted when reset (active low) is asserted. 
+    -- de-asserted when reset (active high) is asserted. 
     -- The read address is also latched when S_AXI_ARVALID is 
 
     -- asserted. axi_araddr is reset to zero on reset assertion.
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_arready <= '0';
                 axi_araddr <= (OTHERS => '1');
             ELSE
@@ -328,13 +331,13 @@ BEGIN
     -- data are available on the axi_rdata bus at this instance. The 
     -- assertion of axi_rvalid marks the validity of read data on the 
     -- bus and axi_rresp indicates the status of read transaction.axi_rvalid 
-    -- is deasserted on reset (active low). axi_rresp and axi_rdata are 
+    -- is deasserted on reset (active high). axi_rresp and axi_rdata are 
 
-    -- cleared to zero on reset (active low).  
+    -- cleared to zero on reset (active high).  
     PROCESS (S_AXI_ACLK)
     BEGIN
         IF rising_edge(S_AXI_ACLK) THEN
-            IF S_AXI_ARESETN = '0' THEN
+            IF axi_reset = '1' THEN
                 axi_rvalid <= '0';
                 axi_rresp <= "00";
             ELSE
@@ -378,7 +381,7 @@ BEGIN
     PROCESS (S_AXI_ACLK) IS
     BEGIN
         IF (rising_edge(S_AXI_ACLK)) THEN
-            IF (S_AXI_ARESETN = '0') THEN
+            IF (axi_reset = '1') THEN
                 axi_rdata <= (OTHERS => '0');
             ELSE
                 IF (slv_reg_rden = '1') THEN

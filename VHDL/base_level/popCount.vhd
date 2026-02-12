@@ -12,7 +12,7 @@ ENTITY popCount IS
 END ENTITY popCount;
 
 ARCHITECTURE behavioral OF popCount IS
-    SIGNAL popOut : STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0);
+    SIGNAL popOut : STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0) := (OTHERS => '0');
 
 BEGIN
 

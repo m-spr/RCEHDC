@@ -31,16 +31,19 @@ ENTITY countingSimTop IS
              d           : INTEGER := 10; -- number of confComp module
              z           : INTEGER := 0;  -- zeropadding to 2** for RSA 
              classNumber : INTEGER := 10; ---- class number --- for memory image
-             logInNum    : INTEGER := 3); -- MuxCell, ceilingLOG2(#popCounters)
+             logInNum    : INTEGER := 3;
+             dimensionSize: Integer := 1000); -- MuxCell, ceilingLOG2(#popCounters)
     PORT (
         clk, rst, run : IN  STD_LOGIC;
         hv            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
         done          : OUT STD_LOGIC;
         pointer       : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
         dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0);
-        
-        updated_truth           : IN std_logic_vector (d-1 downto 0);
-        updated_predicition     : IN std_logic_vector (d-1 downto 0);
+
+        update_valid : IN STD_LOGIC;
+        update_done  : OUT STD_LOGIC;
+        updated_truth           : IN std_logic_vector (999 downto 0);
+        updated_prediction     : IN std_logic_vector (999 downto 0);
         ground_truth            : IN integer;
         predicted_label         : IN integer
 
@@ -100,32 +103,52 @@ ARCHITECTURE behavioral OF countingSimTop IS
     SIGNAL reg1Update, reg1rst, reg2Update, reg2rst : STD_LOGIC; ---- run shuld be always '1' during calculation --- ctrl ---- 
     SIGNAL muxSel                                   : STD_LOGIC_VECTOR(logInNum DOWNTO 0);
     SIGNAL point                                    : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL allZeros                                 : std_logic_vector((2 ** (n)) * d - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL padded_updated_truth                        : std_logic_vector ((2 ** (n) * d) - 1 DOWNTO 0);
+    SIGNAL padded_updated_prediction                   : std_logic_vector ((2 ** (n) * d) - 1 DOWNTO 0);
 
     ATTRIBUTE MARK_DEBUG               : string;
     ATTRIBUTE MARK_DEBUG OF CHV        : SIGNAL IS "TRUE";
     ATTRIBUTE MARK_DEBUG OF CHV_TO_OUT : SIGNAL IS "TRUE";
+    ATTRIBUTE MARK_DEBUG OF update_valid : SIGNAL IS "TRUE";
+    ATTRIBUTE MARK_DEBUG OF update_done : SIGNAL IS "TRUE";
+    ATTRIBUTE MARK_DEBUG OF padded_updated_truth : SIGNAL IS "TRUE";
+    ATTRIBUTE MARK_DEBUG OF padded_updated_prediction : SIGNAL IS "TRUE";
 
 BEGIN
+    padded_updated_truth <= allZeros((2 ** (n)) * d - 1 - dimensionSize DOWNTO 0) & updated_truth;
+    padded_updated_prediction <= allZeros((2 ** (n)) * d - 1 - dimensionSize DOWNTO 0) & updated_prediction;
 
-    PROCESS
-        VARIABLE mif_line : line;
-        VARIABLE temp_bv  : bit_vector((2 ** (n)) * d - 1 DOWNTO 0); -- Temporary buffer for each line
+    PROCESS (clk)
+        VARIABLE mif_line    : line;
+        VARIABLE temp_bv     : bit_vector((2 ** (n)) * d - 1 DOWNTO 0);
+        VARIABLE initialized : boolean := false;
     BEGIN
-        -- Loop through each line of the file
-        FOR i IN 0 TO classNumber - 1 LOOP
-            IF NOT endfile(CHV_file) THEN
-                -- Read one line from the file
-                readline(CHV_file, mif_line);
-                -- Read the binary data into the temporary bit_vector
-                read(mif_line, temp_bv);
-                -- Convert the bit_vector to std_logic_vector and store it in the memory signal
-                CHV(i) <= to_stdlogicvector(temp_bv);
+        IF rising_edge(clk) THEN
+            IF rst = '1' THEN
+                update_done <= '0';
+                -- Initialize from file
+                IF NOT initialized THEN
+                    FOR i IN 0 TO classNumber - 1 LOOP
+                        IF NOT endfile(CHV_file) THEN
+                            readline(CHV_file, mif_line);
+                            read(mif_line, temp_bv);
+                            CHV(i) <= to_stdlogicvector(temp_bv);
+                        ELSE
+                            CHV(i) <= (OTHERS => '0');
+                        END IF;
+                    END LOOP;
+                    initialized := true;
+                END IF;
+            ELSIF update_valid = '1' THEN
+                -- Update CHV vectors with learning results
+                CHV(ground_truth) <= padded_updated_truth;
+                CHV(predicted_label) <= padded_updated_prediction;
+                update_done <= '1';
             ELSE
-                -- Handle end of file if fewer lines exist than expected
-                CHV(i) <= (OTHERS => '0'); -- Optional: Initialize remaining entries to 0
+                update_done <= '0';
             END IF;
-        END LOOP;
-        WAIT; -- Stop the process after reading the file
+        END IF;
     END PROCESS;
 
     concatECC: FOR I IN classNumber - 1 DOWNTO 0 GENERATE
@@ -171,6 +194,3 @@ BEGIN
     done    <= reg2Update;
 
 END ARCHITECTURE behavioral;
-
-
-
