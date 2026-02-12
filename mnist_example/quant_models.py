@@ -222,8 +222,8 @@ class Centroid(nn.Module):
         alpha2_num = pred_score - D
 
         # vector-scalar mul/div with trunc
-        update_t = torch.div(lr * alpha1_num * x, D, rounding_mode="trunc")
-        update_p = torch.div(lr * alpha2_num * x, D, rounding_mode="trunc")
+        update_t = torch.div(lr * alpha1_num * x, 1024, rounding_mode="trunc")
+        update_p = torch.div(lr * alpha2_num * x, 1024, rounding_mode="trunc")
 
         # scatter-add into weight vectors
         self.weight[t] += update_t.to(self.weight.dtype)
