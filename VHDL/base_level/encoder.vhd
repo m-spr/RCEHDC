@@ -55,6 +55,7 @@ ARCHITECTURE behavioral OF encoder IS
     END COMPONENT XoringPopCtrl;
 
     SIGNAL update, doneI : STD_LOGIC;
+    SIGNAL update_delayed : STD_LOGIC; -- 1-cycle delay to align with BRAM read latency
     CONSTANT test : STD_LOGIC_VECTOR(lgf - 1 DOWNTO 0) := STD_LOGIC_VECTOR(to_UNSIGNED(featureSize / 2, lgf));
     SIGNAL douttest       : STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
     SIGNAL doutXOR        : STD_LOGIC_VECTOR((d * lgf) - 1 DOWNTO 0);
@@ -68,11 +69,23 @@ ARCHITECTURE behavioral OF encoder IS
 
 BEGIN
 
+    -- 1 clock cycle dealy to compensate for BRAM latency
+    PROCESS (clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF rst = '1' THEN
+                update_delayed <= '0';
+            ELSE
+                update_delayed <= update;
+            END IF;
+        END IF;
+    END PROCESS;
+
     popCounters: FOR I IN 0 TO d - 1 GENERATE
         pop: XoringInputPop
             GENERIC MAP (lgf)
             PORT MAP (
-                clk, rst, update, doneI,
+                clk, rst, update_delayed, doneI,
                 din(I), BV(I),
                 doutXOR((I + 1) * lgf - 1 DOWNTO (I) * lgf)
             );
