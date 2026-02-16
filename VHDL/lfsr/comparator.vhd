@@ -30,11 +30,11 @@ ENTITY comparator IS
     );
     PORT (
         a, b : IN  STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-        gr   : OUT STD_LOGIC  -- '1' when a >= b, otherwise '0'
+        gr   : OUT STD_LOGIC  -- '1' when a > b, otherwise '0'
     );
 END ENTITY comparator;
 
 ARCHITECTURE behavioral OF comparator IS
 BEGIN
-    gr <= '1' WHEN UNSIGNED(a) >= UNSIGNED(b) ELSE '0';  
+    gr <= '1' WHEN UNSIGNED(a) > UNSIGNED(b) ELSE '0';  
 END ARCHITECTURE behavioral;
