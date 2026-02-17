@@ -36,16 +36,16 @@ ENTITY countingSimTop IS
     PORT (
         clk, rst, run : IN  STD_LOGIC;
         hv            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        update_valid  : IN  STD_LOGIC;
+        updated_truth : IN  std_logic_vector (999 downto 0);
+        updated_prediction : IN std_logic_vector (999 downto 0);
+        ground_truth  : IN  integer;
+        predicted_label : IN integer;
+
         done          : OUT STD_LOGIC;
         pointer       : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
         dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0);
-
-        update_valid : IN STD_LOGIC;
-        update_done  : OUT STD_LOGIC;
-        updated_truth           : IN std_logic_vector (999 downto 0);
-        updated_prediction     : IN std_logic_vector (999 downto 0);
-        ground_truth            : IN integer;
-        predicted_label         : IN integer
+        update_done   : OUT STD_LOGIC
 
     );
 END ENTITY countingSimTop;

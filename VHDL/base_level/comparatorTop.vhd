@@ -10,12 +10,12 @@ ENTITY comparatorTop IS
     PORT (
         clk, rst, run           : IN  STD_LOGIC;
         a                       : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0); --- 16 = 2**4 ,,, 4 is LOG2(n)
+        ground_truth            : IN integer;
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;                              --- final result is ready 
         classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits 
     
         predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-        groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-        ground_truth            : IN integer
+        groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
         );
 END ENTITY comparatorTop;
 

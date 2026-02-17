@@ -217,7 +217,7 @@ else:
     +HDC_DIR+"/base_level/XoringInputPop.vhd "
     +HDC_DIR+"/base_level/XoringPopCtrl.vhd "
     +HDC_DIR+"/base_level/learningTop.vhd "
-    +HDC_DIR+"/base_level/binarizer.vhd")
+    +HDC_DIR+"/base_level/learningFlowCtrl.vhd ")
 
 
 print("2. Starting Vivado in TCL Mode")
@@ -279,7 +279,7 @@ else:
         f.write(create_ip)
     process.stdin.write(create_ip.encode('utf-8'))
     process.stdin.flush()
-    read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/blk_mem_gen_ID_synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "block memory generation")
+    read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/blk_mem_gen_LEARN_synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "block memory generation")
     
     log = open(args.project_dir+"repackage_ip.log", "w")
     repackage_ip = (template.repackage_ip)

@@ -102,15 +102,15 @@ ARCHITECTURE behavioral OF OTFGEn IS
         PORT (
             clk, rst, run           : IN  STD_LOGIC;
             hv                      : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+            updated_truth           : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            updated_prediction      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            ground_truth            : IN  INTEGER;
+            update_valid            : IN  STD_LOGIC;
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;
             pointer                 : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
             classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
-            updated_truth           : IN std_logic_vector (999 downto 0);
-            updated_prediction     : IN std_logic_vector (999 downto 0);
-            ground_truth            : IN integer;
             predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
             groundTruthScore        : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-            update_valid            : IN STD_LOGIC;
             update_done             : OUT STD_LOGIC
             );
     END COMPONENT classifier;
@@ -159,6 +159,22 @@ ARCHITECTURE behavioral OF OTFGEn IS
             done                 : OUT STD_LOGIC
         );
     END COMPONENT learningTop;
+
+    COMPONENT learningFlowCtrl IS
+        GENERIC (lgCn : INTEGER := 4);
+        PORT (
+            clk, rst      : IN  STD_LOGIC;
+            learning      : IN  STD_LOGIC;
+            TVALID_SI     : IN  STD_LOGIC;
+            TLAST_SI      : IN  STD_LOGIC;
+            classIndexI   : IN  STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+            ground_truth  : IN  INTEGER;
+            update_done   : IN  STD_LOGIC;
+            learningRun   : OUT STD_LOGIC;
+            TLAST_S       : OUT STD_LOGIC;
+            TVALID_S      : OUT STD_LOGIC
+        );
+    END COMPONENT learningFlowCtrl;
 
     SIGNAL doneEncoderToClassifier, rundegi, popen, rstpop1, rstpop : STD_LOGIC;
     SIGNAL QHV                                                      : std_logic_vector(d - 1 DOWNTO 0);
@@ -246,30 +262,21 @@ BEGIN
                   counter, QHV
         );
 
-    PROCESS (clk)
-    BEGIN
-        IF rising_edge(clk) THEN
-            IF rst = '1' THEN
-                QHV_reg <= (others => '0');
-            ELSE
-                QHV_reg <= QHV;
-            END IF;
-        END IF;
-    END PROCESS;
+
 
     cls: classifier
         GENERIC MAP (adI * (2 ** n), c, n, adI, adz, zComp, lgCn, logn)
         PORT MAP (
             clk, rst, doneEncoderToClassifier_d,  
             encoderTodiv,  
-            done, TLAST_SI, TVALID_SI, pointer,
-            classIndexI,
             binary_correct,
             binary_predicted,
             ground_truth,
+            learning_done,
+            done, TLAST_SI, TVALID_SI, pointer,
+            classIndexI,
             predictedClassScore,
             groundTruthScore,
-            learning_done,
             update_done
         );
         
@@ -277,53 +284,40 @@ BEGIN
         GENERIC MAP (d, c)
         PORT MAP (
             clk, rst, learningRun,
-
             ground_truth,
             to_integer(unsigned(classIndexI)),
             to_integer(unsigned(groundTruthScore)),
             to_integer(unsigned(predictedClassScore)),
             QHV_reg,
-
             binary_correct,
             binary_predicted,
             learning_done
+        );
+
+    learning_ctrl: learningFlowCtrl
+        GENERIC MAP (lgCn)
+        PORT MAP (
+            clk, rst,
+            learning,
+            TVALID_SI,
+            TLAST_SI,
+            classIndexI,
+            ground_truth,
+            update_done,
+            learningRun,
+            TLAST_S,
+            TVALID_S
         );
 
     PROCESS (clk)
     BEGIN
         IF rising_edge(clk) THEN
             IF rst = '1' THEN
-                learningRun <= '0';
-                TLAST_S <= '0';
-                TVALID_S <= '0';
-            ELSIF learningRun = '1' THEN
-                TLAST_S <= '0';
-                TVALID_S <= '0';
-                IF update_done = '1' THEN
-                    learningRun <= '0';
-                    TLAST_S <= '1';
-                    TVALID_S <= '1';
-                END IF;
-            ELSIF learning = '1' AND TVALID_SI = '1'
-                AND to_integer(unsigned(classIndexI)) /= ground_truth THEN
-                learningRun <= '1';
-                TLAST_S <= '0';
-                TVALID_S <= '0';
-            ELSE
-                learningRun <= '0';
-                TLAST_S <= TLAST_SI;
-                TVALID_S <= TVALID_SI;
-            END IF;
-        END IF;
-    END PROCESS;
-
-    PROCESS (clk)
-    BEGIN
-        IF rising_edge(clk) THEN
-            IF rst = '1' THEN
                 doneEncoderToClassifier_d <= '0';
+                QHV_reg <= (others => '0');
             ELSE
                 doneEncoderToClassifier_d <= doneEncoderToClassifier;
+                QHV_reg <= QHV;
             END IF;
         END IF;
     END PROCESS;

@@ -25,8 +25,8 @@ import_files -norecurse $PROJECT_DIR/mem/BV_img.coe
 import_files -norecurse $PROJECT_DIR/mem/ID_img.coe
 import_files -norecurse $PROJECT_DIR/mem/trained_weight_dec.coe
 if {$VIVADO_VERSION == "2022.2"} {
-  -Auto-update_compile_order -fileset sources_1
-  -Auto-update_compile_order -fileset sources_1
+  update_compile_order -fileset sources_1
+  update_compile_order -fileset sources_1
 } else {
   update_compile_order -fileset sources_1
   update_compile_order -fileset sources_1
@@ -143,7 +143,6 @@ set_property physical_name s00_axi_lite_rvalid [ipx::get_port_maps RVALID -of_ob
   set_property physical_name s00_axi_lite_rready [ipx::get_port_maps RREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
 
   ipx::associate_bus_interfaces -busif s00_axi_lite -clock s00_axi_lite_aclk [ipx::current_core]
-  ipx::associate_bus_interfaces -busif s00_axi_lite -reset s00_axi_lite_aresetn [ipx::current_core]
 }
 
 puts DONE
@@ -342,9 +341,15 @@ connect_bd_intf_net [get_bd_intf_pins smartconnect_1/M00_AXI] [get_bd_intf_pins 
 if { [get_property CONNECTED_TO [get_bd_pins fulltopHDC_0/clk]] == "" } {
   connect_bd_net [get_bd_pins fulltopHDC_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK0]
 }
-connect_bd_net [get_bd_pins fulltopHDC_0/rst] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+if { [get_property CONNECTED_TO [get_bd_pins fulltopHDC_0/rst]] == "" } {
+  connect_bd_net [get_bd_pins fulltopHDC_0/rst] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_0/aresetn]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_1/aresetn]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+}
 
 if { [get_property CONNECTED_TO [get_bd_pins axi_dma_0/m_axi_mm2s_aclk]] == "" } {
   connect_bd_net [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
@@ -352,10 +357,18 @@ if { [get_property CONNECTED_TO [get_bd_pins axi_dma_0/m_axi_mm2s_aclk]] == "" }
 if { [get_property CONNECTED_TO [get_bd_pins axi_dma_1/m_axi_s2mm_aclk]] == "" } {
   connect_bd_net [get_bd_pins axi_dma_1/m_axi_s2mm_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
 }
-connect_bd_net [get_bd_pins smartconnect_0/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins smartconnect_1/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_0/aclk]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_0/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_1/aclk]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_1/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK]] == "" } {
+  connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK]] == "" } {
+  connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
 validate_bd_design
 
 # connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_100M/peripheral_aresetn]
@@ -416,7 +429,11 @@ launch_runs impl_1 -to_step write_bitstream -jobs 8
 
 prepare_driver="""
 #write_hw_platform -fixed -include_bit -force -file $PROJECT_DIR/$PROJECT_NAME/design_1_wrapper.xsa
+set_msg_config -id {BD 41-395} -suppress
+set_msg_config -id {Common 17-39} -suppress
 write_bd_tcl -force $PROJECT_DIR/release/design_1.tcl
+reset_msg_config -id {BD 41-395} -suppress
+reset_msg_config -id {Common 17-39} -suppress
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.runs/impl_1/design_1_wrapper.bit $PROJECT_DIR/release/design_1.bit
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.gen/sources_1/bd/design_1/hw_handoff/design_1.hwh $PROJECT_DIR/release/design_1.hwh
 puts DONE

@@ -14,16 +14,15 @@ ENTITY classifier IS
     PORT (
         clk, rst, run           : IN  STD_LOGIC;
         hv                      : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        updated_truth           : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_prediction      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        ground_truth            : IN  INTEGER;
+        update_valid            : IN  STD_LOGIC;
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;
         pointer                 : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
         classIndex              : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
-        
-        updated_truth           : IN std_logic_vector (999 downto 0);
-        updated_prediction     : IN std_logic_vector (999 downto 0);
-        ground_truth            : IN integer;
         predictedClassScore     : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
         groundTruthScore        : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
-        update_valid            : IN STD_LOGIC;
         update_done             : OUT STD_LOGIC
     );
 END ENTITY classifier;
@@ -39,17 +38,16 @@ ARCHITECTURE behavioral OF classifier IS
         PORT (
             clk, rst, run : IN  STD_LOGIC;
             hv            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+            update_valid  : IN  STD_LOGIC;
+            updated_truth : IN  std_logic_vector (999 downto 0);
+            updated_prediction : IN std_logic_vector (999 downto 0);
+            ground_truth  : IN  integer;
+            predicted_label : IN integer;
+
             done          : OUT STD_LOGIC;
             pointer       : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
             dout          : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0);
-            
-            
-            update_valid : IN STD_LOGIC;
-            update_done  : OUT STD_LOGIC;
-            updated_truth           : IN std_logic_vector (999 downto 0);
-            updated_prediction     : IN std_logic_vector (999 downto 0);
-            ground_truth            : IN integer;
-            predicted_label         : IN integer
+            update_done   : OUT STD_LOGIC
 
         );
     END COMPONENT countingSimTop;
@@ -62,11 +60,11 @@ ARCHITECTURE behavioral OF classifier IS
         PORT (
             clk, rst, run           : IN  STD_LOGIC;
             a                       : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0); --- 16 = 2**4 ,,, 4 is LOG2(n)
+            ground_truth            : IN integer;
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;                              --- final result is ready 
             classIndex              : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);      --- only the index of class can be also the value!  As of now only support up to 16 classes so 4'bits
             predictedClassScore     : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-            groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
-            ground_truth            : IN integer            
+            groundTruthScore        : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
         );
     END COMPONENT comparatorTop;
     SIGNAL hvTOcount : STD_LOGIC_VECTOR(adI - 1 DOWNTO 0);
@@ -91,16 +89,15 @@ BEGIN
         PORT MAP (
             clk, rst, run,
             hvTOcount,
-            dones,
-            point,
-            toComp,
-            
             update_valid,
-            update_done,
             updated_truth,
             updated_prediction,
             ground_truth,
-            TO_INTEGER (unsigned (classIndexI))
+            TO_INTEGER (unsigned (classIndexI)),
+            dones,
+            point,
+            toComp,
+            update_done
         );
 
     CT: comparatorTop
@@ -108,11 +105,11 @@ BEGIN
         PORT MAP (
             clk, rst, dones,
             toComp,
+            ground_truth,
             done, TLAST_S, TVALID_S,
             classIndexI,
             predictedClassScore,
-            groundTruthScore,
-            ground_truth
+            groundTruthScore
          );
 
     pointer <= point;
