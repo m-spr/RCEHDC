@@ -44,7 +44,10 @@ ENTITY fulltopHDC IS
         IDcoefficient          : INTEGER := 3;  -- Coefficient of ID-level
         lenTKEEP_M             : INTEGER := 1;
         lenTDATA_S             : INTEGER := 8;
-        lenTKEEP_S             : INTEGER := 1
+        lenTKEEP_S             : INTEGER := 1;
+
+        C_S00_AXI_Lite_DATA_WIDTH : INTEGER := 32;
+        C_S00_AXI_Lite_ADDR_WIDTH : INTEGER := 4
     );
     PORT (
         clk        : IN  STD_LOGIC; 
@@ -58,7 +61,29 @@ ENTITY fulltopHDC IS
         TVALID_S   : OUT STD_LOGIC;         
         TLAST_S    : OUT STD_LOGIC;         
         TDATA_S    : OUT STD_LOGIC_VECTOR(lenTDATA_S-1 DOWNTO 0);
-        TKEEP_S    : OUT STD_LOGIC_VECTOR(lenTKEEP_S-1 DOWNTO 0)
+        TKEEP_S    : OUT STD_LOGIC_VECTOR(lenTKEEP_S-1 DOWNTO 0);
+
+        s00_axi_lite_aclk    : IN  std_logic;
+        s00_axi_lite_aresetn : IN  std_logic;
+        s00_axi_lite_awaddr  : IN  std_logic_vector(C_S00_AXI_Lite_ADDR_WIDTH-1 downto 0);
+        s00_axi_lite_awprot  : IN  std_logic_vector(2 downto 0);
+        s00_axi_lite_awvalid : IN  std_logic;
+        s00_axi_lite_awready : OUT std_logic;
+        s00_axi_lite_wdata   : IN  std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH-1 downto 0);
+        s00_axi_lite_wstrb   : IN  std_logic_vector((C_S00_AXI_Lite_DATA_WIDTH/8)-1 downto 0);
+        s00_axi_lite_wvalid  : IN  std_logic;
+        s00_axi_lite_wready  : OUT std_logic;
+        s00_axi_lite_bresp   : OUT std_logic_vector(1 downto 0);
+        s00_axi_lite_bvalid  : OUT std_logic;
+        s00_axi_lite_bready  : IN  std_logic;
+        s00_axi_lite_araddr  : IN  std_logic_vector(C_S00_AXI_Lite_ADDR_WIDTH-1 downto 0);
+        s00_axi_lite_arprot  : IN  std_logic_vector(2 downto 0);
+        s00_axi_lite_arvalid : IN  std_logic;
+        s00_axi_lite_arready : OUT std_logic;
+        s00_axi_lite_rdata   : OUT std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH-1 downto 0);
+        s00_axi_lite_rresp   : OUT std_logic_vector(1 downto 0);
+        s00_axi_lite_rvalid  : OUT std_logic;
+        s00_axi_lite_rready  : IN  std_logic
     );
 END ENTITY fulltopHDC;
 
@@ -89,9 +114,43 @@ ARCHITECTURE behavioral OF fulltopHDC IS
             TLAST_S   : OUT STD_LOGIC;
             TVALID_S  : OUT STD_LOGIC;
             ready_M   : OUT STD_LOGIC;
-            classIndex : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0)
+            classIndex : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
+            ground_truth : IN INTEGER;
+            learning     : IN std_logic
         );
     END COMPONENT;
+
+    COMPONENT mmio_handler IS
+        GENERIC (
+            C_S_AXI_DATA_WIDTH : INTEGER := 32;
+            C_S_AXI_ADDR_WIDTH : INTEGER := 4
+        );
+        PORT (
+            S_AXI_ACLK    : IN  std_logic;
+            S_AXI_ARESETN : IN  std_logic;
+            S_AXI_AWADDR  : IN  std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
+            S_AXI_AWPROT  : IN  std_logic_vector(2 downto 0);
+            S_AXI_AWVALID : IN  std_logic;
+            S_AXI_AWREADY : OUT std_logic;
+            S_AXI_WDATA   : IN  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+            S_AXI_WSTRB   : IN  std_logic_vector((C_S_AXI_DATA_WIDTH/8)-1 downto 0);
+            S_AXI_WVALID  : IN  std_logic;
+            S_AXI_WREADY  : OUT std_logic;
+            S_AXI_BRESP   : OUT std_logic_vector(1 downto 0);
+            S_AXI_BVALID  : OUT std_logic;
+            S_AXI_BREADY  : IN  std_logic;
+            S_AXI_ARADDR  : IN  std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
+            S_AXI_ARPROT  : IN  std_logic_vector(2 downto 0);
+            S_AXI_ARVALID : IN  std_logic;
+            S_AXI_ARREADY : OUT std_logic;
+            S_AXI_RDATA   : OUT std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+            S_AXI_RRESP   : OUT std_logic_vector(1 downto 0);
+            S_AXI_RVALID  : OUT std_logic;
+            S_AXI_RREADY  : IN  std_logic;
+            reg0_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+            reg1_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0)
+        );
+    END COMPONENT mmio_handler;
 
     COMPONENT regOne IS
         GENERIC (
@@ -112,12 +171,47 @@ ARCHITECTURE behavioral OF fulltopHDC IS
     SIGNAL outreg0     : STD_LOGIC_VECTOR(31 DOWNTO 0) := (others => '0');
     SIGNAL pixelreg    : STD_LOGIC_VECTOR(inbit-1 DOWNTO 0);
 
+    SIGNAL ground_truth : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL reg1_out     : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+
     CONSTANT ALLZERO : STD_LOGIC_VECTOR(lenTDATA_S-logClasses-1 DOWNTO 0) := (others => '0');
 
     TYPE state IS (init, registering);
     SIGNAL ns, ps : state;
 
 BEGIN
+
+    -- MMIO Handler for AXI-Lite register access
+    mmio_handler_inst : mmio_handler
+        GENERIC MAP (
+            C_S_AXI_DATA_WIDTH => C_S00_AXI_Lite_DATA_WIDTH,
+            C_S_AXI_ADDR_WIDTH => C_S00_AXI_Lite_ADDR_WIDTH
+        )
+        PORT MAP (
+            S_AXI_ACLK    => clk,
+            S_AXI_ARESETN => rst,
+            S_AXI_AWADDR  => s00_axi_lite_awaddr,
+            S_AXI_AWPROT  => s00_axi_lite_awprot,
+            S_AXI_AWVALID => s00_axi_lite_awvalid,
+            S_AXI_AWREADY => s00_axi_lite_awready,
+            S_AXI_WDATA   => s00_axi_lite_wdata,
+            S_AXI_WSTRB   => s00_axi_lite_wstrb,
+            S_AXI_WVALID  => s00_axi_lite_wvalid,
+            S_AXI_WREADY  => s00_axi_lite_wready,
+            S_AXI_BRESP   => s00_axi_lite_bresp,
+            S_AXI_BVALID  => s00_axi_lite_bvalid,
+            S_AXI_BREADY  => s00_axi_lite_bready,
+            S_AXI_ARADDR  => s00_axi_lite_araddr,
+            S_AXI_ARPROT  => s00_axi_lite_arprot,
+            S_AXI_ARVALID => s00_axi_lite_arvalid,
+            S_AXI_ARREADY => s00_axi_lite_arready,
+            S_AXI_RDATA   => s00_axi_lite_rdata,
+            S_AXI_RRESP   => s00_axi_lite_rresp,
+            S_AXI_RVALID  => s00_axi_lite_rvalid,
+            S_AXI_RREADY  => s00_axi_lite_rready,
+            reg0_out      => ground_truth,
+            reg1_out      => reg1_out
+        );
 
     -- Instantiating HDC OTFGEn
     HDCOTFGEn : OTFGEn 
@@ -145,7 +239,9 @@ BEGIN
             TLAST_S   => TLAST_S, 
             TVALID_S  => TVALID_S, 
             ready_M   => TREADY_M,  
-            classIndex => classIndex
+            classIndex => classIndex,
+            ground_truth => TO_INTEGER(unsigned(ground_truth)),
+            learning     => reg1_out(0)
         );
 
     -- Assignments

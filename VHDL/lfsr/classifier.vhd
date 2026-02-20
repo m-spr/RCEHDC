@@ -35,15 +35,22 @@ ENTITY classifier IS
         logn    : INTEGER := 3      -- MuxCell RSA, ceiling log2(popCounters)
     );
     PORT (
-        clk         : IN  STD_LOGIC;
-        rst         : IN  STD_LOGIC;
-        run         : IN  STD_LOGIC;
-        hv          : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
-        done        : OUT STD_LOGIC;
-        TLAST_S     : OUT STD_LOGIC;
-        TVALID_S    : OUT STD_LOGIC;
-        pointer     : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-        classIndex  : OUT STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0)
+        clk                : IN  STD_LOGIC;
+        rst                : IN  STD_LOGIC;
+        run                : IN  STD_LOGIC;
+        hv                 : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        ground_truth       : IN  INTEGER;
+        update_valid       : IN  STD_LOGIC;
+        done               : OUT STD_LOGIC;
+        TLAST_S            : OUT STD_LOGIC;
+        TVALID_S           : OUT STD_LOGIC;
+        pointer            : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+        classIndex         : OUT STD_LOGIC_VECTOR(lgCn-1 DOWNTO 0);
+        predictedClassScore : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+        groundTruthScore    : OUT STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
+        update_done         : OUT STD_LOGIC
     );
 END ENTITY classifier;
 
@@ -52,40 +59,50 @@ ARCHITECTURE behavioral OF classifier IS
     -- Counting Simulation Top-Level Component
     COMPONENT countingSimTop IS
         GENERIC (
-            n           : INTEGER := 10;  -- Bit-widths of memory pointer, counter, etc.
-            d           : INTEGER := 10;  -- Number of confComp modules
-            z           : INTEGER := 0;   -- Zero-padding to 2** for RSA
-            classNumber : INTEGER := 10;  -- Number of classes for memory image
-            logInNum    : INTEGER := 3    -- MuxCell, ceiling log2(popCounters)
+            n              : INTEGER := 10;
+            d              : INTEGER := 10;
+            z              : INTEGER := 0;
+            classNumber    : INTEGER := 10;
+            logInNum       : INTEGER := 3;
+            dimensionSize  : INTEGER := 1000
         );
         PORT (
-            clk      : IN  STD_LOGIC;
-            rst      : IN  STD_LOGIC;
-            run      : IN  STD_LOGIC;
-            hv       : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
-            done     : OUT STD_LOGIC;
-            pointer  : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-            dout     : OUT STD_LOGIC_VECTOR(classNumber * (n + logInNum) - 1 DOWNTO 0)
+            clk                : IN  STD_LOGIC;
+            rst                : IN  STD_LOGIC;
+            run                : IN  STD_LOGIC;
+            hv                 : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+            update_valid       : IN  STD_LOGIC;
+            updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            ground_truth       : IN  INTEGER;
+            predicted_label    : IN  INTEGER;
+            done               : OUT STD_LOGIC;
+            pointer            : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+            dout               : OUT STD_LOGIC_VECTOR(classNumber*(n+logInNum)-1 DOWNTO 0);
+            update_done        : OUT STD_LOGIC
         );
     END COMPONENT;
 
     -- Comparator Top-Level Component
     COMPONENT comparatorTop IS
         GENERIC (
-            len  : INTEGER := 8;  -- Bit width out adder
-            n    : INTEGER := 10; -- Number of classes
-            z    : INTEGER := 10; -- Zero-padding to 2**
-            lgn  : INTEGER := 4   -- Log2 of the number of classes
+            len  : INTEGER := 8;
+            n    : INTEGER := 10;
+            z    : INTEGER := 10;
+            lgn  : INTEGER := 4
         );
         PORT (
-            clk         : IN  STD_LOGIC;
-            rst         : IN  STD_LOGIC;
-            run         : IN  STD_LOGIC;
-            a           : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0);
-            done        : OUT STD_LOGIC;
-            TLAST_S     : OUT STD_LOGIC;
-            TVALID_S    : OUT STD_LOGIC;
-            classIndex  : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0)
+            clk                 : IN  STD_LOGIC;
+            rst                 : IN  STD_LOGIC;
+            run                 : IN  STD_LOGIC;
+            a                   : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0);
+            ground_truth        : IN  INTEGER;
+            done                : OUT STD_LOGIC;
+            TLAST_S             : OUT STD_LOGIC;
+            TVALID_S            : OUT STD_LOGIC;
+            classIndex          : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
+            predictedClassScore : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+            groundTruthScore    : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
         );
     END COMPONENT;
 
@@ -94,8 +111,11 @@ ARCHITECTURE behavioral OF classifier IS
     SIGNAL dones     : STD_LOGIC;
     SIGNAL toComp    : STD_LOGIC_VECTOR(c * (n + logn) - 1 DOWNTO 0);
     SIGNAL point     : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+    SIGNAL classIndexI : STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
 
 BEGIN
+
+    classIndex <= classIndexI;
 
     -- Generate hvTOcount using pointer indexing
     concat: FOR I IN adI-1 DOWNTO 0 GENERATE
@@ -112,13 +132,19 @@ BEGIN
             logInNum    => logn
         )
         PORT MAP (
-            clk     => clk,
-            rst     => rst,
-            run     => run,
-            hv      => hvTOcount,
-            done    => dones,
-            pointer => point,
-            dout    => toComp
+            clk                => clk,
+            rst                => rst,
+            run                => run,
+            hv                 => hvTOcount,
+            update_valid       => update_valid,
+            updated_truth      => updated_truth,
+            updated_prediction => updated_prediction,
+            ground_truth       => ground_truth,
+            predicted_label    => TO_INTEGER(unsigned(classIndexI)),
+            done               => dones,
+            pointer            => point,
+            dout               => toComp,
+            update_done        => update_done
         );
 
     -- Comparator Instance
@@ -130,14 +156,17 @@ BEGIN
             lgn  => lgCn
         )
         PORT MAP (
-            clk        => clk,
-            rst        => rst,
-            run        => dones,
-            a          => toComp,
-            done       => done,
-            TLAST_S    => TLAST_S,
-            TVALID_S   => TVALID_S,
-            classIndex => classIndex
+            clk                 => clk,
+            rst                 => rst,
+            run                 => dones,
+            a                   => toComp,
+            ground_truth        => ground_truth,
+            done                => done,
+            TLAST_S             => TLAST_S,
+            TVALID_S            => TVALID_S,
+            classIndex          => classIndexI,
+            predictedClassScore => predictedClassScore,
+            groundTruthScore    => groundTruthScore
         );
 
     -- Assign output pointer

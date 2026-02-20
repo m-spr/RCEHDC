@@ -176,6 +176,7 @@ if LFSR:
         +HDC_DIR+"/lfsr/hdcTest.vhd "
         # +HDC_DIR+"/lfsr/hvTOcompIn.vhd " #deprecated
         +HDC_DIR+"/lfsr/id_level.vhd "
+        +HDC_DIR+"/lfsr/mmio_handler.vhd "
         +HDC_DIR+"/lfsr/popCount.vhd "
         +HDC_DIR+"/lfsr/recMux.vhd "
         +HDC_DIR+"/lfsr/reg.vhd "
@@ -183,6 +184,8 @@ if LFSR:
         +HDC_DIR+"/lfsr/RSA.vhd "
         +HDC_DIR+"/lfsr/SeqAdder.vhd "
         +HDC_DIR+"/lfsr/SeqAdderCtrl.vhd "
+        +HDC_DIR+"/lfsr/learningTop.vhd "
+        +HDC_DIR+"/lfsr/learningFlowCtrl.vhd "
         +HDC_DIR+"/lfsr/XoringInputPop.vhd "
         +HDC_DIR+"/lfsr/XoringPopCtrl.vhd")
 else:
@@ -258,13 +261,30 @@ if LFSR:
         signature = f.readline()
     with open(args.project_dir+'mem/configInitialvalues.txt', 'r') as f:
         init = f.readline()
-    create_ip = (template.create_ip_tcl_template % (signature, init))
+    create_ip = (template.create_ip_tcl_template % (DIMENSIONS, signature, init))
     with open(args.project_dir+"create_ip.tcl", "w") as f:
         f.write(create_ip)
     process.stdin.write(create_ip.encode('utf-8'))
     process.stdin.flush()
     write_log(log, "DONE", "failed")
     log.close()
+
+    if not SPARSE:
+        create_ip = (template.insert_block_mem)
+        with open(args.project_dir+"create_ip.tcl", "a") as f:
+            f.write(create_ip)
+        process.stdin.write(create_ip.encode('utf-8'))
+        process.stdin.flush()
+        read_log(args.project_dir+PROJECT_NAME+"/"+PROJECT_NAME+".runs/blk_mem_gen_LEARN_synth_1/runme.log", "synth_design completed successfully", "synth_design failed", "block memory generation")
+
+        log = open(args.project_dir+"repackage_ip.log", "w")
+        repackage_ip = (template.repackage_ip)
+        with open(args.project_dir+"create_ip.tcl", "a") as f:
+            f.write(repackage_ip)
+        process.stdin.write(repackage_ip.encode('utf-8'))
+        process.stdin.flush()
+        write_log(log, "DONE", "failed")
+        log.close()
 else:
     create_ip = (template.create_ip_tcl_template % (FEATURES, DIMENSIONS, NUM_LEVELS))
     with open(args.project_dir+"create_ip.tcl", "w") as f:

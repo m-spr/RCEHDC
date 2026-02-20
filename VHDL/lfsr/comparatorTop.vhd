@@ -34,8 +34,11 @@ ENTITY comparatorTop IS
     PORT (
         clk, rst, run : IN  STD_LOGIC;
         a             : IN  STD_LOGIC_VECTOR(n * len - 1 DOWNTO 0); 
+        ground_truth  : IN  INTEGER;
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;
-        classIndex     : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0)
+        classIndex     : OUT STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
+        predictedClassScore : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+        groundTruthScore    : OUT STD_LOGIC_VECTOR(len - 1 DOWNTO 0)
     );
 END ENTITY comparatorTop;
 
@@ -108,6 +111,7 @@ ARCHITECTURE behavioral OF comparatorTop IS
 
     -- Internal Signals
     SIGNAL muxSel      : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
+    SIGNAL muxSelClassIdx : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
     SIGNAL classIndexI, classIndexI2 : STD_LOGIC_VECTOR(lgn - 1 DOWNTO 0);
     SIGNAL muxSelE     : STD_LOGIC_VECTOR(lgn DOWNTO 0);
     SIGNAL muxOut, toComp, fromComp  : STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
@@ -203,6 +207,31 @@ BEGIN
     done     <= doneI;
     muxSelE  <= '0' & muxSel;
     classIndexI2 <= STD_LOGIC_VECTOR(UNSIGNED(n - 1 - UNSIGNED(classIndexI)));
+    muxSelClassIdx <= STD_LOGIC_VECTOR(UNSIGNED(n - 1 - UNSIGNED(muxSel)));
+
+    -- Extract ground truth class score
+process(clk)
+begin
+    if rising_edge(clk) then
+        if rst = '1' then
+            groundTruthScore <= (others => '0');
+        elsif to_integer(unsigned(muxSelClassIdx)) = ground_truth then
+            groundTruthScore <= muxOut;
+        end if;
+    end if;
+end process;
+
+    -- Extract predicted class score
+process(clk)
+begin
+    if rising_edge(clk) then
+        if rst = '1' then
+            predictedClassScore <= (others => '0');
+        elsif doneI = '1' then
+            predictedClassScore <= toComp;
+        end if;
+    end if;
+end process;
 
 END ARCHITECTURE behavioral;
 

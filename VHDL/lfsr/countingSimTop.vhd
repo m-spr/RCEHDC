@@ -27,20 +27,27 @@ USE STD.TEXTIO.ALL;
 
 ENTITY countingSimTop IS
     GENERIC (
-        n           : INTEGER := 10;  -- Bit-widths of memory pointer, counter, etc.
-        d           : INTEGER := 10;  -- Number of confComp modules
-        z           : INTEGER := 0;   -- Zero padding for RSA
-        classNumber : INTEGER := 10;  -- Number of classes for memory image
-        logInNum    : INTEGER := 3    -- MuxCell, ceilingLOG2(#popCounters)
+        n              : INTEGER := 10;  -- Bit-widths of memory pointer, counter, etc.
+        d              : INTEGER := 10;  -- Number of confComp modules
+        z              : INTEGER := 0;   -- Zero padding for RSA
+        classNumber    : INTEGER := 10;  -- Number of classes for memory image
+        logInNum       : INTEGER := 3;   -- MuxCell, ceilingLOG2(#popCounters)
+        dimensionSize  : INTEGER := 1000 -- Actual dimension size for padding
     );
     PORT (
-        clk        : IN  STD_LOGIC;
-        rst        : IN  STD_LOGIC;
-        run        : IN  STD_LOGIC;
-        hv         : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
-        done       : OUT STD_LOGIC;
-        pointer    : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
-        dout       : OUT STD_LOGIC_VECTOR(classNumber*(n+logInNum)-1 DOWNTO 0)
+        clk                : IN  STD_LOGIC;
+        rst                : IN  STD_LOGIC;
+        run                : IN  STD_LOGIC;
+        hv                 : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
+        update_valid       : IN  STD_LOGIC;
+        updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        ground_truth       : IN  INTEGER;
+        predicted_label    : IN  INTEGER;
+        done               : OUT STD_LOGIC;
+        pointer            : OUT STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+        dout               : OUT STD_LOGIC_VECTOR(classNumber*(n+logInNum)-1 DOWNTO 0);
+        update_done        : OUT STD_LOGIC
     );
 END ENTITY countingSimTop;
 
@@ -116,28 +123,46 @@ ARCHITECTURE behavioral OF countingSimTop IS
     SIGNAL reg1Update, reg1rst, reg2Update, reg2rst : STD_LOGIC;
     SIGNAL muxSel : STD_LOGIC_VECTOR(logInNum DOWNTO 0);
     SIGNAL point : STD_LOGIC_VECTOR(n-1 DOWNTO 0);
+    SIGNAL allZeros : STD_LOGIC_VECTOR((2**(n))*d - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL padded_updated_truth      : STD_LOGIC_VECTOR((2**(n))*d - 1 DOWNTO 0);
+    SIGNAL padded_updated_prediction : STD_LOGIC_VECTOR((2**(n))*d - 1 DOWNTO 0);
 
 BEGIN
 
-    -- Reading Memory File
-    PROCESS
-        VARIABLE mif_line : LINE;
-        VARIABLE temp_bv : BIT_VECTOR((2**n)*d-1 DOWNTO 0); -- Temporary buffer for each line
+    padded_updated_truth <= allZeros((2**(n))*d - 1 - dimensionSize DOWNTO 0) & updated_truth;
+    padded_updated_prediction <= allZeros((2**(n))*d - 1 - dimensionSize DOWNTO 0) & updated_prediction;
+
+    -- Reading Memory File and Learning Update
+    PROCESS (clk)
+        VARIABLE mif_line    : LINE;
+        VARIABLE temp_bv     : BIT_VECTOR((2**n)*d-1 DOWNTO 0);
+        VARIABLE initialized : BOOLEAN := FALSE;
     BEGIN
-        FOR i IN 0 TO classNumber-1 LOOP
-            IF NOT endfile(CHV_file) THEN
-                -- Read one line from the file
-                readline(CHV_file, mif_line);
-                -- Read the binary data into the temporary bit_vector
-                read(mif_line, temp_bv);
-                -- Convert the bit_vector to std_logic_vector and store it in memory
-                CHV(i) <= TO_STDLOGICVECTOR(temp_bv);
+        IF rising_edge(clk) THEN
+            IF rst = '1' THEN
+                update_done <= '0';
+                -- Initialize from file
+                IF NOT initialized THEN
+                    FOR i IN 0 TO classNumber-1 LOOP
+                        IF NOT endfile(CHV_file) THEN
+                            readline(CHV_file, mif_line);
+                            read(mif_line, temp_bv);
+                            CHV(i) <= TO_STDLOGICVECTOR(temp_bv);
+                        ELSE
+                            CHV(i) <= (others => '0');
+                        END IF;
+                    END LOOP;
+                    initialized := TRUE;
+                END IF;
+            ELSIF update_valid = '1' THEN
+                -- Update CHV vectors with learning results
+                CHV(ground_truth) <= padded_updated_truth;
+                CHV(predicted_label) <= padded_updated_prediction;
+                update_done <= '1';
             ELSE
-                -- Handle end of file if fewer lines exist than expected
-                CHV(i) <= (others => '0'); -- Optional: Initialize remaining entries to 0
+                update_done <= '0';
             END IF;
-        END LOOP;
-        WAIT; -- Stop the process after reading the file
+        END IF;
     END PROCESS; 
 
     -- Extracting Correct CHV Segment

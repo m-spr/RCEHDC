@@ -32,13 +32,19 @@ puts DONE
 """
 
 create_ip_tcl_template="""
-ipx::package_project -root_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports -vendor user.org -library user -taxonomy /UserIP
+set DIMENSIONS %d
+
+ipx::package_project -root_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1 -vendor user.org -library user -taxonomy /UserIP
 set_property core_revision 2 [ipx::current_core]
 ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
-set_property  ip_repo_paths  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports [current_project]
+set_property  ip_repo_paths  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1 [current_project]
 update_ip_catalog
+
+
+set_property top fulltopHDC [current_fileset]
+update_compile_order -fileset sources_1
 
 
 #grouping ports
@@ -78,6 +84,62 @@ set_property physical_name TREADY_M [ipx::get_port_maps TREADY -of_objects [ipx:
 ipx::associate_bus_interfaces -busif M_AXI -clock clk [ipx::current_core]
 ipx::associate_bus_interfaces -busif S_AXI -clock clk [ipx::current_core]
 
+# AXI4-Lite MMIO slave interface (new)
+if { [llength [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]] == 0 } {
+  ipx::add_bus_interface s00_axi_lite [ipx::current_core]
+}
+set_property abstraction_type_vlnv xilinx.com:interface:aximm_rtl:1.0 [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+set_property bus_type_vlnv xilinx.com:interface:aximm:1.0 [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+set_property interface_mode slave [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+
+if { [llength [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]] > 0 } {
+  # Port maps for AXI4-Lite
+  ipx::add_port_map ACLK   [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_aclk    [ipx::get_port_maps ACLK   -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map ARESETN [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_aresetn [ipx::get_port_maps ARESETN -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map AWADDR [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_awaddr [ipx::get_port_maps AWADDR -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map AWPROT [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_awprot [ipx::get_port_maps AWPROT -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map AWVALID [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_awvalid [ipx::get_port_maps AWVALID -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map AWREADY [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_awready [ipx::get_port_maps AWREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map WDATA [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_wdata [ipx::get_port_maps WDATA -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map WSTRB [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_wstrb [ipx::get_port_maps WSTRB -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map WVALID [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_wvalid [ipx::get_port_maps WVALID -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map WREADY [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_wready [ipx::get_port_maps WREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map BRESP [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_bresp [ipx::get_port_maps BRESP -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map BVALID [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_bvalid [ipx::get_port_maps BVALID -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map BREADY [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_bready [ipx::get_port_maps BREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map ARADDR [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_araddr [ipx::get_port_maps ARADDR -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map ARPROT [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_arprot [ipx::get_port_maps ARPROT -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map ARVALID [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_arvalid [ipx::get_port_maps ARVALID -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map ARREADY [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_arready [ipx::get_port_maps ARREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map RDATA [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_rdata [ipx::get_port_maps RDATA -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map RRESP [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_rresp [ipx::get_port_maps RRESP -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map RVALID [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_rvalid [ipx::get_port_maps RVALID -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+  ipx::add_port_map RREADY [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]
+  set_property physical_name s00_axi_lite_rready [ipx::get_port_maps RREADY -of_objects [ipx::get_bus_interfaces s00_axi_lite -of_objects [ipx::current_core]]]
+
+  ipx::associate_bus_interfaces -busif s00_axi_lite -clock s00_axi_lite_aclk [ipx::current_core]
+}
+
 set NEW_CONSTANT_VALUE_1 {"%s"}
 set NEW_CONSTANT_VALUE_2 {"%s"}
 # Set the reference directory for source file relative paths 
@@ -116,8 +178,53 @@ ipx::create_xgui_files [ipx::current_core]
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 ipx::save_core [ipx::current_core]
-update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/imports
+update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1
 ipx::merge_project_changes files [ipx::current_core]
+
+puts DONE
+"""
+
+insert_block_mem="""
+create_ip -name blk_mem_gen -vendor xilinx.com -library ip -version 8.4 -module_name blk_mem_gen_LEARN
+set_property -dict [list \
+  CONFIG.Coe_File ${PROJECT_DIR}/mem/trained_weight_dec.coe \
+  CONFIG.Enable_A {Always_Enabled} \
+  CONFIG.Enable_B {Always_Enabled} \
+  CONFIG.Load_Init_File {true} \
+  CONFIG.Memory_Type {True_Dual_Port_RAM} \
+  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+  CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+  CONFIG.Write_Depth_A [expr int($DIMENSIONS*10)] \
+  CONFIG.Write_Width_A 32 \
+  CONFIG.Read_Width_A 32 \
+  CONFIG.Write_Width_B 32 \
+  CONFIG.Read_Width_B 32 \
+] [get_ips blk_mem_gen_LEARN]
+set_property -dict [list CONFIG.Write_Width_A 32 CONFIG.Write_Depth_A [expr int($DIMENSIONS*10)] CONFIG.Read_Width_A 32] [get_ips blk_mem_gen_LEARN]
+
+generate_target {instantiation_template} [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci]
+update_compile_order -fileset sources_1
+generate_target all [get_files  $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci]
+catch { config_ip_cache -export [get_ips -all blk_mem_gen_LEARN] }
+export_ip_user_files -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci]
+launch_runs blk_mem_gen_LEARN_synth_1 -jobs 8
+export_simulation -of_objects [get_files $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1/ip/blk_mem_gen_LEARN/blk_mem_gen_LEARN.xci] -directory $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/sim_scripts -ip_user_files_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files -ipstatic_source_dir $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.ip_user_files/ipstatic -lib_map_path [list {modelsim=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/modelsim} {questa=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/questa} {xcelium=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/xcelium} {vcs=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/vcs} {riviera=$PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+"""
+
+repackage_ip="""
+set_property core_revision 3 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::check_integrity [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1
+ipx::merge_project_changes files [ipx::current_core]
+ipx::merge_project_changes hdl_parameters [ipx::current_core]
+update_compile_order -fileset sources_1
+ipx::merge_project_changes files [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.srcs/sources_1
 
 puts DONE
 """
@@ -155,6 +262,12 @@ startgroup
 create_bd_cell -type ip -vlnv user.org:user:fulltopHDC:1.0 fulltopHDC_0
 endgroup
 
+if { [llength [get_bd_intf_pins fulltopHDC_0/s00_axi_lite]] > 0 } {
+  startgroup
+  apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/fulltopHDC_0/s00_axi_lite} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins fulltopHDC_0/s00_axi_lite]
+  endgroup
+}
+
 
 # remember to make them 8 bits
 
@@ -191,7 +304,7 @@ connect_bd_intf_net [get_bd_intf_pins fulltopHDC_0/M_AXI] [get_bd_intf_pins axi_
 
 startgroup
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_0/S_AXI_LITE} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins axi_dma_0/S_AXI_LITE]
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_1/S_AXI_LITE} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins axi_DMA_1/S_AXI_LITE]
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_1/S_AXI_LITE} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins axi_dma_1/S_AXI_LITE]
 # apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins fulltopHDC_0/clk]
 endgroup
 
@@ -216,17 +329,31 @@ endgroup
 connect_bd_intf_net [get_bd_intf_pins smartconnect_1/S00_AXI] [get_bd_intf_pins axi_dma_0/M_AXI_MM2S]
 connect_bd_intf_net [get_bd_intf_pins smartconnect_1/M00_AXI] [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
 
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_0/aresetn]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_1/aresetn]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
+}
 
-connect_bd_net [get_bd_pins fulltopHDC_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins fulltopHDC_0/rst] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-connect_bd_net [get_bd_pins smartconnect_1/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-connect_bd_net [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins axi_dma_1/m_axi_s2mm_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins smartconnect_0/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins smartconnect_1/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
-connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+if { [get_property CONNECTED_TO [get_bd_pins axi_dma_0/m_axi_mm2s_aclk]] == "" } {
+  connect_bd_net [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins axi_dma_1/m_axi_s2mm_aclk]] == "" } {
+  connect_bd_net [get_bd_pins axi_dma_1/m_axi_s2mm_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_0/aclk]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_0/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins smartconnect_1/aclk]] == "" } {
+  connect_bd_net [get_bd_pins smartconnect_1/aclk] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK]] == "" } {
+  connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
+if { [get_property CONNECTED_TO [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK]] == "" } {
+  connect_bd_net [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+}
 validate_bd_design
 
 # startgroup

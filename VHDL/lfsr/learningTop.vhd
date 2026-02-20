@@ -105,6 +105,8 @@ architecture behavioral of learningTop is
 
 	signal wb_idx    : integer range 0 to d - 1 := 0;
 	signal wb_active : std_logic                 := '0';
+	signal wb_actived : std_logic                 := '0';
+
 
 	signal id_d1      : integer range 0 to d - 1 := 0;
 	signal bram_valid : std_logic                 := '0';
@@ -199,16 +201,19 @@ begin
 				else
 					binary_predicted(wb_idx) <= '0';
 				end if;
-
-				if wb_idx = d - 1 then
-					wb_active <= '0';
-					learn_wea <= '0';
+				
+                if wb_actived = '1' then
+				    wb_actived <= '0';
+				    wb_active <= '0';
+				    learn_wea <= '0';
 					learn_web <= '0';
 					done             <= '1';
 					update_completed <= '0';
 					pipe_valid_s1    <= '0';
 					pipe_valid_s2    <= '0';
 					pipe_valid_s3    <= '0';
+				elsif wb_idx = d - 1 then
+					wb_actived <= '1';
 				else
 					wb_idx <= wb_idx + 1;
 				end if;

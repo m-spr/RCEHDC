@@ -338,12 +338,6 @@ endgroup
 connect_bd_intf_net [get_bd_intf_pins smartconnect_1/S00_AXI] [get_bd_intf_pins axi_dma_0/M_AXI_MM2S]
 connect_bd_intf_net [get_bd_intf_pins smartconnect_1/M00_AXI] [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
 
-if { [get_property CONNECTED_TO [get_bd_pins fulltopHDC_0/clk]] == "" } {
-  connect_bd_net [get_bd_pins fulltopHDC_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK0]
-}
-if { [get_property CONNECTED_TO [get_bd_pins fulltopHDC_0/rst]] == "" } {
-  connect_bd_net [get_bd_pins fulltopHDC_0/rst] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
-}
 if { [get_property CONNECTED_TO [get_bd_pins smartconnect_0/aresetn]] == "" } {
   connect_bd_net [get_bd_pins smartconnect_0/aresetn] [get_bd_pins rst_ps7_0_${FREQ_MHZ}M/peripheral_aresetn]
 }
@@ -429,11 +423,7 @@ launch_runs impl_1 -to_step write_bitstream -jobs 8
 
 prepare_driver="""
 #write_hw_platform -fixed -include_bit -force -file $PROJECT_DIR/$PROJECT_NAME/design_1_wrapper.xsa
-set_msg_config -id {BD 41-395} -suppress
-set_msg_config -id {Common 17-39} -suppress
 write_bd_tcl -force $PROJECT_DIR/release/design_1.tcl
-reset_msg_config -id {BD 41-395} -suppress
-reset_msg_config -id {Common 17-39} -suppress
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.runs/impl_1/design_1_wrapper.bit $PROJECT_DIR/release/design_1.bit
 file copy -force $PROJECT_DIR/$PROJECT_NAME/$PROJECT_NAME.gen/sources_1/bd/design_1/hw_handoff/design_1.hwh $PROJECT_DIR/release/design_1.hwh
 puts DONE
