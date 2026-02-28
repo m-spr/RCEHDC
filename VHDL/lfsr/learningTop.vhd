@@ -105,7 +105,7 @@ architecture behavioral of learningTop is
 
 	signal wb_idx    : integer range 0 to d - 1 := 0;
 	signal wb_active : std_logic                 := '0';
-	signal wb_actived : std_logic                 := '0';
+	signal wb_actived : std_logic                 := '0'; --delay wb_active by one cycle, needed to ensure last index is accessed in writeback
 
 
 	signal id_d1      : integer range 0 to d - 1 := 0;
