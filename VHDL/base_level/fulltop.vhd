@@ -25,7 +25,7 @@ ENTITY fulltopHDC IS
 		
 		
 		C_S00_AXI_Lite_DATA_WIDTH : integer	:= 32;
-        C_S00_AXI_Lite_ADDR_WIDTH : integer	:= 4
+        C_S00_AXI_Lite_ADDR_WIDTH : integer	:= 5
             );
     PORT (
         clk      : IN  STD_LOGIC;
@@ -94,14 +94,23 @@ ARCHITECTURE behavioral OF fulltopHDC IS
             --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
             classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
             ground_truth               : IN integer;
-            learning                   : IN std_logic 
+            learning                   : IN std_logic;
+            -- MMIO BRAM access ports
+            mmio_active                : IN  STD_LOGIC;
+            mmio_bram_sel              : IN  STD_LOGIC_VECTOR(1 DOWNTO 0);
+            mmio_addr                  : IN  STD_LOGIC_VECTOR(15 DOWNTO 0);
+            mmio_we                    : IN  STD_LOGIC;
+            mmio_wdata_wide            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+            mmio_wdata_narrow          : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
+            mmio_rdata_wide            : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+            mmio_rdata_narrow          : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
         );
     END COMPONENT OTFGEn;
 
 component mmio_handler is
         generic (
             C_S_AXI_DATA_WIDTH	: integer	:= 32;
-            C_S_AXI_ADDR_WIDTH	: integer	:= 4
+            C_S_AXI_ADDR_WIDTH	: integer	:= 5
         );
         port (
             S_AXI_ACLK	    : in std_logic;
@@ -126,7 +135,14 @@ component mmio_handler is
             S_AXI_RVALID	: out std_logic;
             S_AXI_RREADY	: in std_logic;
             reg0_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
-            reg1_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0)
+            reg1_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg2_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg3_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg4_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg5_out : OUT std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            bram_rdata_in  : IN  std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            bram_status_in : IN  std_logic_vector(C_S_AXI_DATA_WIDTH - 1 DOWNTO 0);
+            reg5_wr_pulse  : OUT std_logic
         );
     end component mmio_handler;
 
@@ -149,6 +165,11 @@ component mmio_handler is
     
     SIGNAL ground_truth    : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
     SIGNAL reg1_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+    SIGNAL reg2_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+    SIGNAL reg3_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+    SIGNAL reg4_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+    SIGNAL reg5_out        : std_logic_vector(C_S00_AXI_Lite_DATA_WIDTH - 1 DOWNTO 0);
+    SIGNAL reg5_wr_pulse   : std_logic;
 
     TYPE state IS (init, registering);
     SIGNAL ns, ps : state;
@@ -166,8 +187,101 @@ component mmio_handler is
     ATTRIBUTE MARK_DEBUG OF done       : SIGNAL IS "TRUE";
     ATTRIBUTE MARK_DEBUG OF ns         : SIGNAL IS "TRUE";
 
+    -- MMIO BRAM access control signals (decoded from reg2)
+    SIGNAL mmio_active     : std_logic;
+    SIGNAL bram_sel        : std_logic_vector(1 DOWNTO 0);
+    SIGNAL mmio_we_ctrl    : std_logic;
+    SIGNAL mmio_start_raw  : std_logic;
+
+    -- Start edge detection
+    SIGNAL start_prev      : std_logic := '0';
+    SIGNAL start_pulse     : std_logic := '0';
+
+    -- BRAM access state
+    SIGNAL bram_read_pending : std_logic := '0';
+    SIGNAL mmio_we_pulse     : std_logic := '0';
+
+    -- 1024-bit capture register for ID/BV wide BRAM reads/writes (d bits used, rest zero-padded)
+    SIGNAL capture_wide    : std_logic_vector(1023 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL capture_narrow  : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL capture_valid   : std_logic := '0';
+
+    -- Chunk index (0..31) for 32-bit slicing of the 1024-bit capture register
+    SIGNAL chunk_idx       : integer range 0 to 31;
+
+    -- OTFGEn MMIO interface
+    SIGNAL otf_mmio_rdata_wide   : std_logic_vector(d - 1 DOWNTO 0);
+    SIGNAL otf_mmio_rdata_narrow : std_logic_vector(31 DOWNTO 0);
+
+    -- MMIO read data and status fed back to mmio_handler
+    SIGNAL bram_rdata_in   : std_logic_vector(31 DOWNTO 0);
+    SIGNAL bram_status_in  : std_logic_vector(31 DOWNTO 0);
+
 BEGIN
     --rstl <= not(rst);
+
+    -- Decode MMIO control register (reg2)
+    mmio_active    <= reg2_out(0);
+    bram_sel       <= reg2_out(2 DOWNTO 1);
+    mmio_we_ctrl   <= reg2_out(3);
+    mmio_start_raw <= reg2_out(4);
+
+    chunk_idx <= to_integer(unsigned(reg4_out(4 DOWNTO 0)));
+
+    -- Read data mux: select between wide (chunked) and narrow capture
+    bram_rdata_in <= capture_wide(chunk_idx * 32 + 31 DOWNTO chunk_idx * 32)
+                     WHEN (bram_sel = "00" OR bram_sel = "01") ELSE
+                     capture_narrow;
+
+    bram_status_in <= (0 => capture_valid, OTHERS => '0');
+
+    -- Start pulse edge detection and BRAM access sequencing
+    PROCESS (clk)
+    BEGIN
+        IF rising_edge(clk) THEN
+            IF rst = '0' THEN -- Active-low reset (rst is S_AXI_ARESETN)
+                start_prev         <= '0';
+                start_pulse        <= '0';
+                bram_read_pending  <= '0';
+                mmio_we_pulse      <= '0';
+                capture_valid      <= '0';
+                capture_wide       <= (OTHERS => '0');
+                capture_narrow     <= (OTHERS => '0');
+            ELSE
+                start_prev  <= mmio_start_raw;
+                start_pulse <= mmio_start_raw AND (NOT start_prev);
+                mmio_we_pulse <= '0';
+
+                -- Handle start pulse: initiate BRAM read or write
+                IF (mmio_start_raw = '1' AND start_prev = '0') THEN
+                    IF mmio_we_ctrl = '0' THEN
+                        bram_read_pending <= '1';
+                        capture_valid     <= '0';
+                    ELSE
+                        mmio_we_pulse <= '1';
+                    END IF;
+                END IF;
+
+                -- One cycle after read was initiated, capture the data
+                IF bram_read_pending = '1' THEN
+                    bram_read_pending <= '0';
+                    capture_valid     <= '1';
+                    IF bram_sel = "10" THEN
+                        capture_narrow <= otf_mmio_rdata_narrow;
+                    ELSE
+                        capture_wide <= (OTHERS => '0');
+                        capture_wide(d - 1 DOWNTO 0) <= otf_mmio_rdata_wide;
+                    END IF;
+                END IF;
+
+                -- Load a 32-bit chunk into capture_wide when PS writes to reg5
+                IF reg5_wr_pulse = '1' AND mmio_active = '1' AND bram_sel /= "10" THEN
+                    capture_wide(chunk_idx * 32 + 31 DOWNTO chunk_idx * 32) <= reg5_out;
+                END IF;
+            END IF;
+        END IF;
+    END PROCESS;
+
 mmio_handler_inst : mmio_handler
     generic map (
         C_S_AXI_DATA_WIDTH	=> C_S00_AXI_Lite_DATA_WIDTH,
@@ -196,16 +310,39 @@ mmio_handler_inst : mmio_handler
         S_AXI_RVALID	=> s00_axi_lite_rvalid,
         S_AXI_RREADY	=> s00_axi_lite_rready,
         reg0_out        => ground_truth,
-        reg1_out        => reg1_out
+        reg1_out        => reg1_out,
+        reg2_out        => reg2_out,
+        reg3_out        => reg3_out,
+        reg4_out        => reg4_out,
+        reg5_out        => reg5_out,
+        bram_rdata_in   => bram_rdata_in,
+        bram_status_in  => bram_status_in,
+        reg5_wr_pulse   => reg5_wr_pulse
     );
     HDCOTFGEn: OTFGEn
         GENERIC MAP (
             pixbit, d, lgf, c, featureSize, n, adI, adz, zComp, lgCn, logn, log2features, log2id
         )
         PORT MAP (
-            clk, rst, run,
-            pixelIn, done, TLAST_S, TVALID_S, TREADY_M,
-            classIndex, TO_INTEGER(unsigned(ground_truth)), reg1_out(0)
+            clk            => clk,
+            rstl           => rst,
+            run            => run,
+            pixel          => pixelIn,
+            done           => done,
+            TLAST_S        => TLAST_S,
+            TVALID_S       => TVALID_S,
+            ready_M        => TREADY_M,
+            classIndex     => classIndex,
+            ground_truth   => TO_INTEGER(unsigned(ground_truth)),
+            learning       => reg1_out(0),
+            mmio_active    => mmio_active,
+            mmio_bram_sel  => bram_sel,
+            mmio_addr      => reg3_out(15 DOWNTO 0),
+            mmio_we        => mmio_we_pulse,
+            mmio_wdata_wide   => capture_wide(d - 1 DOWNTO 0),
+            mmio_wdata_narrow => reg5_out,
+            mmio_rdata_wide   => otf_mmio_rdata_wide,
+            mmio_rdata_narrow => otf_mmio_rdata_narrow
         );
 
     pixelIn <= TDATA_M;

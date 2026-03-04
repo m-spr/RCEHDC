@@ -156,7 +156,7 @@ set_property -dict [list \
   CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/imports/mem/BV_img.coe \
   CONFIG.Enable_A {Always_Enabled} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {Single_Port_ROM} \
+  CONFIG.Memory_Type {Single_Port_RAM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
   CONFIG.Write_Depth_A $FEATURES \
   CONFIG.Write_Width_A $DIMENSIONS \
@@ -178,7 +178,7 @@ set_property -dict [list \
   CONFIG.Coe_File ${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.srcs/sources_1/imports/mem/ID_img.coe \
   CONFIG.Enable_A {Always_Enabled} \
   CONFIG.Load_Init_File {true} \
-  CONFIG.Memory_Type {Single_Port_ROM} \
+  CONFIG.Memory_Type {Single_Port_RAM} \
   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
   CONFIG.Write_Depth_A $LEVELS \
   CONFIG.Write_Width_A $DIMENSIONS \

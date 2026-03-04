@@ -31,7 +31,16 @@ ENTITY OTFGEn IS
         --pixelMemOutIndex : OUT STD_LOGIC_VECTOR(14 DOWNTO 0);
         classIndex                 : OUT STD_LOGIC_VECTOR(lgCn - 1 DOWNTO 0);
         ground_truth               : IN  INTEGER;
-        learning                    : in std_logic
+        learning                   : IN  std_logic;
+        -- MMIO BRAM access ports
+        mmio_active                : IN  STD_LOGIC;
+        mmio_bram_sel              : IN  STD_LOGIC_VECTOR(1 DOWNTO 0);
+        mmio_addr                  : IN  STD_LOGIC_VECTOR(15 DOWNTO 0);
+        mmio_we                    : IN  STD_LOGIC;
+        mmio_wdata_wide            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        mmio_wdata_narrow          : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
+        mmio_rdata_wide            : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+        mmio_rdata_narrow          : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
     );
 END ENTITY OTFGEn;
 
@@ -57,10 +66,13 @@ ARCHITECTURE behavioral OF OTFGEn IS
             dout     : OUT STD_LOGIC_VECTOR(lenPop - 1 DOWNTO 0)
         );
     END COMPONENT popCount;
+
     COMPONENT blk_mem_gen_BV IS
         PORT (
             clka  : IN  STD_LOGIC;
+            wea   : IN  STD_LOGIC_VECTOR(0 DOWNTO 0);
             addra : IN  STD_LOGIC_VECTOR(lgf - 1 DOWNTO 0);
+            dina  : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
             douta : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0)
         );
     END COMPONENT blk_mem_gen_BV;
@@ -68,7 +80,9 @@ ARCHITECTURE behavioral OF OTFGEn IS
     COMPONENT blk_mem_gen_ID IS
         PORT (
             clka  : IN  STD_LOGIC;
+            wea   : IN  STD_LOGIC_VECTOR(0 DOWNTO 0);
             addra : IN  STD_LOGIC_VECTOR(pixbit - 1 DOWNTO 0);
+            dina  : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
             douta : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0)
         );
     END COMPONENT blk_mem_gen_ID;
@@ -156,7 +170,12 @@ ARCHITECTURE behavioral OF OTFGEn IS
             qhv                  : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --wrongly predicted query vector
             binary_correct       : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --binarized updated correct class weights
             binary_predicted     : OUT STD_LOGIC_VECTOR(d - 1 DOWNTO 0); --binarized updated predicted class weights
-            done                 : OUT STD_LOGIC
+            done                 : OUT STD_LOGIC;
+            mmio_active          : IN  STD_LOGIC;
+            mmio_learn_addr      : IN  STD_LOGIC_VECTOR(15 DOWNTO 0);
+            mmio_learn_din       : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
+            mmio_learn_we        : IN  STD_LOGIC;
+            mmio_learn_dout      : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
         );
     END COMPONENT learningTop;
 
@@ -224,6 +243,14 @@ ARCHITECTURE behavioral OF OTFGEn IS
 
     SIGNAL doneEncoderToClassifier_d : STD_LOGIC := '0';
 
+    -- MMIO BRAM muxing signals
+    SIGNAL id_addr_muxed : STD_LOGIC_VECTOR(pixbit - 1 DOWNTO 0);
+    SIGNAL bv_addr_muxed : STD_LOGIC_VECTOR(lgf - 1 DOWNTO 0);
+    SIGNAL id_wea        : STD_LOGIC_VECTOR(0 DOWNTO 0);
+    SIGNAL bv_wea        : STD_LOGIC_VECTOR(0 DOWNTO 0);
+
+    SIGNAL mmio_learn_active : STD_LOGIC;
+
 BEGIN
     classIndex <= classIndexI;
     rst          <= NOT(rstl);
@@ -231,6 +258,19 @@ BEGIN
     rstpop1      <= '1' WHEN indexdatamem11 = "1010101110000" ELSE '0';
     rstpop       <= rstpop1 OR rst;
     indexdatamem <= indexdatamem11 & "00";
+
+    -- MMIO address muxing for ID and BV BRAMs
+    id_addr_muxed <= mmio_addr(pixbit - 1 DOWNTO 0)
+                     WHEN (mmio_active = '1' AND mmio_bram_sel = "00") ELSE pixel;
+    bv_addr_muxed <= mmio_addr(lgf - 1 DOWNTO 0)
+                     WHEN (mmio_active = '1' AND mmio_bram_sel = "01") ELSE counter;
+
+    id_wea(0) <= mmio_we WHEN (mmio_active = '1' AND mmio_bram_sel = "00") ELSE '0';
+    bv_wea(0) <= mmio_we WHEN (mmio_active = '1' AND mmio_bram_sel = "01") ELSE '0';
+
+    mmio_rdata_wide <= idLevelOut WHEN mmio_bram_sel = "00" ELSE BV;
+
+    mmio_learn_active <= '1' WHEN (mmio_active = '1' AND mmio_bram_sel = "10") ELSE '0';
 
     pop: popCount
         GENERIC MAP (13)
@@ -242,15 +282,22 @@ BEGIN
     bvrst <= rst OR doneEncoderToClassifier OR rstpop;
 
     idGen: blk_mem_gen_ID
-        PORT MAP (clk, pixel,
-                  idLevelOut
+        PORT MAP (
+            clka  => clk,
+            wea   => id_wea,
+            addra => id_addr_muxed,
+            dina  => mmio_wdata_wide,
+            douta => idLevelOut
         );
 
     BVGen: blk_mem_gen_BV
         PORT MAP (
-            clk,
-            counter,
-            BV);
+            clka  => clk,
+            wea   => bv_wea,
+            addra => bv_addr_muxed,
+            dina  => mmio_wdata_wide,
+            douta => BV
+        );
 
     enc: encoder
         GENERIC MAP (
@@ -283,15 +330,22 @@ BEGIN
     learn_inst: learningTop
         GENERIC MAP (d, c)
         PORT MAP (
-            clk, rst, learningRun,
-            ground_truth,
-            to_integer(unsigned(classIndexI)),
-            to_integer(unsigned(groundTruthScore)),
-            to_integer(unsigned(predictedClassScore)),
-            QHV_reg,
-            binary_correct,
-            binary_predicted,
-            learning_done
+            clk              => clk,
+            rst              => rst,
+            run              => learningRun,
+            correct_label    => ground_truth,
+            predicted_label  => to_integer(unsigned(classIndexI)),
+            similarity_correct   => to_integer(unsigned(groundTruthScore)),
+            similarity_incorrect => to_integer(unsigned(predictedClassScore)),
+            qhv              => QHV_reg,
+            binary_correct   => binary_correct,
+            binary_predicted => binary_predicted,
+            done             => learning_done,
+            mmio_active      => mmio_learn_active,
+            mmio_learn_addr  => mmio_addr,
+            mmio_learn_din   => mmio_wdata_narrow,
+            mmio_learn_we    => mmio_we,
+            mmio_learn_dout  => mmio_rdata_narrow
         );
 
     learning_ctrl: learningFlowCtrl

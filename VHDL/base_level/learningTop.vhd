@@ -19,7 +19,12 @@ entity learningTop is
 		qhv                  : in std_logic_vector(0 to d - 1);       -- wrongly predicted query vector
 		binary_correct       : out std_logic_vector(0 to d - 1);      -- binarized updated correct class weights
 		binary_predicted     : out std_logic_vector(0 to d - 1);      -- binarized updated predicted class weights
-		done                 : out std_logic
+		done                 : out std_logic;
+		mmio_active          : in std_logic;
+		mmio_learn_addr      : in std_logic_vector(15 downto 0);
+		mmio_learn_din       : in std_logic_vector(31 downto 0);
+		mmio_learn_we        : in std_logic;
+		mmio_learn_dout      : out std_logic_vector(31 downto 0)
 	);
 end entity;
 
@@ -90,6 +95,13 @@ architecture behavioral of learningTop is
 	signal learn_wea   : std_logic := '0';
 	signal learn_web   : std_logic := '0';
 
+	signal bram_addra : std_logic_vector(addr_w - 1 downto 0);
+	signal bram_addrb : std_logic_vector(addr_w - 1 downto 0);
+	signal bram_wea   : std_logic;
+	signal bram_web   : std_logic;
+	signal bram_dina  : std_logic_vector(31 downto 0);
+	signal bram_dinb  : std_logic_vector(31 downto 0);
+
 	signal pipe_valid_s1, pipe_valid_s2, pipe_valid_s3 : std_logic := '0';
 	signal pipe_idx_s1, pipe_idx_s2, pipe_idx_s3       : integer range 0 to d - 1;
 
@@ -105,6 +117,7 @@ architecture behavioral of learningTop is
 
 	signal wb_idx    : integer range 0 to d - 1 := 0;
 	signal wb_active : std_logic                 := '0';
+	signal wb_actived : std_logic                 := '0';
 
 	signal id_d1      : integer range 0 to d - 1 := 0;
 	signal bram_valid : std_logic                 := '0';
@@ -199,16 +212,19 @@ begin
 				else
 					binary_predicted(wb_idx) <= '0';
 				end if;
-
-				if wb_idx = d - 1 then
-					wb_active <= '0';
-					learn_wea <= '0';
+				
+                if wb_actived = '1' then
+				    wb_actived <= '0';
+				    wb_active <= '0';
+				    learn_wea <= '0';
 					learn_web <= '0';
 					done             <= '1';
 					update_completed <= '0';
 					pipe_valid_s1    <= '0';
 					pipe_valid_s2    <= '0';
 					pipe_valid_s3    <= '0';
+				elsif wb_idx = d - 1 then
+					wb_actived <= '1';
 				else
 					wb_idx <= wb_idx + 1;
 				end if;
@@ -246,17 +262,26 @@ begin
 	learn_addra <= write_addra when wb_active = '1' else read_addra;
 	learn_addrb <= write_addrb when wb_active = '1' else read_addrb;
 
+	bram_addra <= mmio_learn_addr(addr_w - 1 downto 0) when mmio_active = '1' else learn_addra;
+	bram_addrb <= learn_addrb;
+	bram_wea   <= mmio_learn_we  when mmio_active = '1' else learn_wea;
+	bram_web   <= '0'            when mmio_active = '1' else learn_web;
+	bram_dina  <= mmio_learn_din when mmio_active = '1' else learn_dina;
+	bram_dinb  <= learn_dinb;
+
+	mmio_learn_dout <= learn_douta;
+
 	learn_mem : blk_mem_gen_LEARN
 		port map (
 			clka  => clk,
-			wea   => learn_wea,
-			addra => learn_addra,
-			dina  => learn_dina,
+			wea   => bram_wea,
+			addra => bram_addra,
+			dina  => bram_dina,
 			douta => learn_douta,
 			clkb  => clk,
-			web   => learn_web,
-			addrb => learn_addrb,
-			dinb  => learn_dinb,
+			web   => bram_web,
+			addrb => bram_addrb,
+			dinb  => bram_dinb,
 			doutb => learn_doutb
 		);
 end architecture;

@@ -121,18 +121,28 @@ BEGIN
     classIndexI2 <= std_logic_vector(unsigned(n - 1 - unsigned(classIndexI)));
     muxSelClassIdx <= std_logic_vector(unsigned(n - 1 - unsigned(muxSel)));
 
-    process(clk)
-    begin
-        if(to_integer(unsigned(muxSelClassIdx)) = ground_truth) then
+    -- Extract ground truth class score
+process(clk)
+begin
+    if rising_edge(clk) then
+        if rst = '1' then
+            groundTruthScore <= (others => '0');
+        elsif to_integer(unsigned(muxSelClassIdx)) = ground_truth then
             groundTruthScore <= muxOut;
         end if;
-    end process;
+    end if;
+end process;
 
-    process(doneI)
-    begin
-        IF doneI = '1' THEN
+    -- Extract predicted class score
+process(clk)
+begin
+    if rising_edge(clk) then
+        if rst = '1' then
+            predictedClassScore <= (others => '0');
+        elsif doneI = '1' then
             predictedClassScore <= toComp;
-        END IF;
-    end process;
+        end if;
+    end if;
+end process;
     
 END ARCHITECTURE behavioral;

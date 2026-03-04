@@ -4,6 +4,7 @@ LIBRARY IEEE;
 
 ENTITY classifier IS
     GENERIC (d     : INTEGER := 1000; --- dimension size+zeropading
+             dimensionSize : INTEGER := 1000; -- actual dimension size
              c     : INTEGER := 10;   ---- #Classes
              n     : INTEGER := 7;    -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,, 
              adI   : INTEGER := 5;    -- number of confComp module, or adderInput and = ceiling(D/(2^n))
@@ -14,8 +15,8 @@ ENTITY classifier IS
     PORT (
         clk, rst, run           : IN  STD_LOGIC;
         hv                      : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
-        updated_truth           : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
-        updated_prediction      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_truth           : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
+        updated_prediction      : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
         ground_truth            : IN  INTEGER;
         update_valid            : IN  STD_LOGIC;
         done, TLAST_S, TVALID_S : OUT STD_LOGIC;
@@ -39,8 +40,8 @@ ARCHITECTURE behavioral OF classifier IS
             clk, rst, run : IN  STD_LOGIC;
             hv            : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
             update_valid  : IN  STD_LOGIC;
-            updated_truth : IN  std_logic_vector (999 downto 0);
-            updated_prediction : IN std_logic_vector (999 downto 0);
+            updated_truth : IN  std_logic_vector (dimensionSize - 1 DOWNTO 0);
+            updated_prediction : IN std_logic_vector (dimensionSize - 1 DOWNTO 0);
             ground_truth  : IN  integer;
             predicted_label : IN integer;
 
