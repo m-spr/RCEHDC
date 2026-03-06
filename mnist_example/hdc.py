@@ -22,6 +22,7 @@ import json
 
 import pathlib
 path = str(pathlib.Path(__file__).parent.resolve())
+os.makedirs(path + "/model", exist_ok=True)
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(threshold=sys.maxsize)
@@ -225,24 +226,8 @@ def online_learning(epochs: int = 1, lr: int = 64, loader=None):
     torch.save(shadow_weight, path + "/model/shadow_weight.pt")
     torch.save(model.weight,  path + "/model/int_weights.pt")
 
-def online_learning_standard(epochs: int = 1, lr: float = 1.0, sim: str = "cos", loader=None):
+def online_learning_standard(epochs: int = 1, lr: float = 64.0, sim: str = "cos", loader=None):
     """Online updates using the standard OnlineHD error-corrective rule (add_online)."""
-    global shadow_weight
-    if shadow_weight is None:
-        # Try loading persisted shadow weights from a previous online-learning run,
-        # falling back to the initial training weights (int_weights.pt).
-        shadow_path = path + "/model/shadow_weight.pt"
-        int_path = path + "/model/int_weights.pt"
-        if os.path.isfile(shadow_path):
-            print("Loading shadow weights from previous online-learning run")
-            shadow_weight = torch.load(shadow_path, map_location=device)
-        elif os.path.isfile(int_path):
-            print("Loading initial training weights (int_weights.pt)")
-            shadow_weight = torch.load(int_path, map_location=device)
-        else:
-            shadow_weight = model.weight.detach().clone()
-    # restore shadow (full-precision) weights before online updates
-    model.weight = torch.nn.Parameter(shadow_weight.clone().to(device), requires_grad=False)
 
     ld = loader if loader is not None else train_ld
     with torch.no_grad():
@@ -251,11 +236,8 @@ def online_learning_standard(epochs: int = 1, lr: float = 1.0, sim: str = "cos",
                 samples = samples.to(device)
                 labels = labels.to(device)
                 samples_hv = encode(samples)
-                model.add_online(samples_hv, labels, lr, sim)
+                model.add_online(samples_hv, labels, lr, False)
 
-    # keep the updated shadow weights for future reuse
-    shadow_weight = model.weight.detach().clone()
-    # persist shadow weights and updated model weights to disk
-    torch.save(shadow_weight, path + "/model/shadow_weight.pt")
-    torch.save(model.weight,  path + "/model/int_weights.pt")
+    # persist updated model weights to disk
+    torch.save(model.weight, path + "/model/int_weights.pt")
 
