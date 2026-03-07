@@ -22,7 +22,6 @@ import json
 
 import pathlib
 path = str(pathlib.Path(__file__).parent.resolve())
-os.makedirs(path + "/model", exist_ok=True)
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(threshold=sys.maxsize)
@@ -41,7 +40,8 @@ c = int(math.floor(DIMENSIONS/NUM_LEVELS))
 r = int (DIMENSIONS%NUM_LEVELS)
 print_flag = 0 
 countTimer = 100
-BATCH_SIZE = 1  # for GPUs with enough memory we can process multiple images at ones
+BATCH_SIZE = 32
+ENCODE_BATCH_SIZE = 32  # batch size for pre-encoding in online learning
 a = []
 b = []
 transform = torchvision.transforms.PILToTensor()
@@ -152,6 +152,26 @@ model = model.to(device)
 shadow_weight = None
 trained_weight = None
 
+
+def batch_encode_dataset(loader, batch_size=ENCODE_BATCH_SIZE):
+    """Pre-encode an entire dataset in large batches for GPU throughput.
+
+    Returns (all_hv, all_labels) tensors on *device*.
+    """
+    encode_ld = torch.utils.data.DataLoader(
+        loader.dataset, batch_size=batch_size, shuffle=False
+    )
+    all_hv = []
+    all_labels = []
+    with torch.no_grad():
+        for samples, labels in tqdm(encode_ld, desc="Encoding"):
+            samples = samples.to(device)
+            hv = encode(samples)
+            all_hv.append(hv)
+            all_labels.append(labels)
+    return torch.cat(all_hv, dim=0), torch.cat(all_labels, dim=0).to(device)
+
+
 def train():
     with torch.no_grad():
         for samples, labels in tqdm(train_ld, desc="Training"):
@@ -212,13 +232,12 @@ def online_learning(epochs: int = 1, lr: int = 64, loader=None):
     model.weight = torch.nn.Parameter(shadow_weight.clone().to(device), requires_grad=False)
 
     ld = loader if loader is not None else train_ld
+    # Pre-encode entire dataset in large batches, then update one sample at a time
+    all_hv, all_labels = batch_encode_dataset(ld)
     with torch.no_grad():
         for epoch in range(epochs):
-            for samples, labels in tqdm(ld, desc=f"Online (QA) epoch {epoch+1}"):
-                samples = samples.to(device)
-                labels = labels.to(device)
-                samples_hv = encode(samples)
-                model.add_online_quantized_aware(samples_hv, labels, lr)
+            for i in tqdm(range(all_hv.size(0)), desc=f"Online (QA) epoch {epoch+1}"):
+                model.add_online_quantized_aware(all_hv[i:i+1], all_labels[i:i+1], lr)
 
     # keep the updated shadow weights for future reuse
     shadow_weight = model.weight.detach().clone()
@@ -230,13 +249,13 @@ def online_learning_standard(epochs: int = 1, lr: float = 64.0, sim: str = "cos"
     """Online updates using the standard OnlineHD error-corrective rule (add_online)."""
 
     ld = loader if loader is not None else train_ld
+    # Pre-encode entire dataset in large batches, then update one sample at a time
+    all_hv, all_labels = batch_encode_dataset(ld)
     with torch.no_grad():
         for epoch in range(epochs):
-            for samples, labels in tqdm(ld, desc=f"Online epoch {epoch+1}"):
-                samples = samples.to(device)
-                labels = labels.to(device)
-                samples_hv = encode(samples)
-                model.add_online(samples_hv, labels, lr, False)
+            for i in tqdm(range(all_hv.size(0)), desc=f"Online epoch {epoch+1}"):
+                model.add_online(all_hv[i:i+1], all_labels[i:i+1], lr, False)
 
     # persist updated model weights to disk
     torch.save(model.weight, path + "/model/int_weights.pt")
+
