@@ -240,4 +240,3 @@ def online_learning_standard(epochs: int = 1, lr: float = 64.0, sim: str = "cos"
 
     # persist updated model weights to disk
     torch.save(model.weight, path + "/model/int_weights.pt")
-
