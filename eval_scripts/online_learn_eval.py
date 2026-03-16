@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 """Script to train, evaluate, refine online, and re-evaluate the HDC model."""
 
+import pathlib
 import sys
+
+script_dir = pathlib.Path(__file__).parent.resolve()
+repo_root = script_dir.parent
+project_dir = repo_root / "mnist_example"
+
+if str(project_dir) not in sys.path:
+	sys.path.insert(0, str(project_dir))
+
 from hdc import test, online_learning, online_learning_standard, train
 
 

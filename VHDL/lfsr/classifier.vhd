@@ -26,6 +26,7 @@ USE IEEE.NUMERIC_STD.ALL;
 ENTITY classifier IS
     GENERIC (
         d       : INTEGER := 1000;  -- Dimension size + zero-padding
+        dimensionSize : INTEGER := 1000; -- Actual dimension size
         c       : INTEGER := 10;    -- Number of classes
         n       : INTEGER := 7;     -- Bit-widths of memory pointer, counter, etc.
         adI     : INTEGER := 5;     -- Number of confComp modules or adder inputs (ceiling(D / 2^n))
@@ -39,8 +40,8 @@ ENTITY classifier IS
         rst                : IN  STD_LOGIC;
         run                : IN  STD_LOGIC;
         hv                 : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
-        updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
-        updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_truth      : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
+        updated_prediction : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
         ground_truth       : IN  INTEGER;
         update_valid       : IN  STD_LOGIC;
         done               : OUT STD_LOGIC;
@@ -72,8 +73,8 @@ ARCHITECTURE behavioral OF classifier IS
             run                : IN  STD_LOGIC;
             hv                 : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
             update_valid       : IN  STD_LOGIC;
-            updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
-            updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            updated_truth      : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
+            updated_prediction : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
             ground_truth       : IN  INTEGER;
             predicted_label    : IN  INTEGER;
             done               : OUT STD_LOGIC;
@@ -129,7 +130,8 @@ BEGIN
             d           => adI,
             z           => adz,
             classNumber => c,
-            logInNum    => logn
+            logInNum    => logn,
+            dimensionSize => dimensionSize
         )
         PORT MAP (
             clk                => clk,

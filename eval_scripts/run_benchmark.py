@@ -12,7 +12,9 @@ RUNS = 20
 OUTPUT_FILE = "benchmark_results.txt"
 
 script_dir = pathlib.Path(__file__).parent.resolve()
-config_path = script_dir / "config.json"
+repo_root = script_dir.parent
+project_dir = repo_root / "mnist_example"
+config_path = project_dir / "config.json"
 eval_script = script_dir / "online_learn_eval.py"
 use_standard_onlinehd = len(sys.argv) > 1 and sys.argv[1].lower() == "onlinehd"
 
@@ -34,7 +36,7 @@ def run_once() -> subprocess.CompletedProcess[str]:
         cmd,
         capture_output=True,
         text=True,
-        cwd=str(script_dir),
+        cwd=str(project_dir),
     )
 
 
@@ -51,7 +53,8 @@ def summarize_stderr(stderr: str, max_lines: int = 6) -> str:
 
 
 def main():
-    with open(script_dir / OUTPUT_FILE, "w") as out:
+    output_path = project_dir / OUTPUT_FILE
+    with open(output_path, "w") as out:
         for dim in DIMENSIONS:
             out.write(f"=== DIMENSIONS {dim} ===\n")
             print(f"\n{'='*40}")
@@ -84,7 +87,7 @@ def main():
                 out.flush()
                 print(f"    -> {line}")
 
-    print(f"\nResults written to {script_dir / OUTPUT_FILE}")
+    print(f"\nResults written to {output_path}")
 
 
 if __name__ == "__main__":

@@ -96,8 +96,8 @@ ARCHITECTURE behavioral OF encoder IS
     SIGNAL douttest     : STD_LOGIC_VECTOR (d - 1 DOWNTO 0);
     SIGNAL doutXOR      : STD_LOGIC_VECTOR ((d * lgf) - 1 DOWNTO 0);
     SIGNAL querycheck   : STD_LOGIC_VECTOR (d - 1 DOWNTO 0);
-    SIGNAL testID       : STD_LOGIC_VECTOR (999 DOWNTO 0) := (others => '0');
-    SIGNAL testBV       : STD_LOGIC_VECTOR (999 DOWNTO 0) := (others => '0');
+    SIGNAL testID       : STD_LOGIC_VECTOR (d - 1 DOWNTO 0) := (others => '0');
+    SIGNAL testBV       : STD_LOGIC_VECTOR (d - 1 DOWNTO 0) := (others => '0');
     SIGNAL IDeq, BVeq, eq : STD_LOGIC;
 
 BEGIN

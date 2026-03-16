@@ -109,7 +109,7 @@ class Centroid(nn.Module):
         self.weight.index_add_(0, target, input, alpha=lr)
 
     @torch.no_grad()
-    def add_online(self, input: Tensor, target: Tensor, lr: float = 64.0, dot=False) -> None:
+    def add_online(self, input: Tensor, target: Tensor, lr: float = 1.0, dot=False) -> None:
         r"""Only updates the prototype vectors on wrongly predicted inputs.
 
         Implements the iterative training method as described in `OnlineHD: Robust, Efficient, and Single-Pass Online Learning Using Hyperdimensional System <https://ieeexplore.ieee.org/abstract/document/9474107>`_.
@@ -118,9 +118,20 @@ class Centroid(nn.Module):
         and adds the input to the target prototype scaled by :math:`1 - \delta`,
         where :math:`\epsilon` is the cosine similarity of the input with the mispredicted class prototype
         and :math:`\delta` is the cosine similarity of the input with the target class prototype.
+
+        Similarity is computed against binarized (sign) weights to match
+        the quantized inference behaviour on hardware.
         """
         # Adapted from: https://gitlab.com/biaslab/onlinehd/-/blob/master/onlinehd/onlinehd.py
-        logit = self(input, dot=dot)
+        # Binarize weights for similarity computation (matches deployed hardware)
+        binary_weight = self.weight.sign()
+        binary_weight[binary_weight == 0] = 1.0
+
+        if dot:
+            logit = functional.dot_similarity(input, binary_weight)
+        else:
+            logit = functional.cosine_similarity(input, binary_weight)
+
         pred = logit.argmax(1)
         is_wrong = target != pred
 
@@ -222,8 +233,8 @@ class Centroid(nn.Module):
         alpha2_num = pred_score - D
 
         # vector-scalar mul/div with trunc
-        update_t = torch.div(lr * alpha1_num * x, 1024, rounding_mode="trunc")
-        update_p = torch.div(lr * alpha2_num * x, 1024, rounding_mode="trunc")
+        update_t = torch.div(lr * alpha1_num * x, D, rounding_mode="trunc")
+        update_p = torch.div(lr * alpha2_num * x, D, rounding_mode="trunc")
 
         # scatter-add into weight vectors
         self.weight[t] += update_t.to(self.weight.dtype)

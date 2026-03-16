@@ -236,8 +236,11 @@ def online_learning(epochs: int = 1, lr: int = 64, loader=None):
     all_hv, all_labels = batch_encode_dataset(ld)
     with torch.no_grad():
         for epoch in range(epochs):
-            for i in tqdm(range(all_hv.size(0)), desc=f"Online (QA) epoch {epoch+1}"):
-                model.add_online_quantized_aware(all_hv[i:i+1], all_labels[i:i+1], lr)
+            perm = torch.randperm(all_hv.size(0))
+            all_hv_shuffled = all_hv[perm] 
+            all_labels_shuffled = all_labels[perm]
+            for i in tqdm(range(all_hv_shuffled.size(0)), desc=f"Online (QA) epoch {epoch+1}"):
+                model.add_online_quantized_aware(all_hv_shuffled[i:i+1], all_labels_shuffled[i:i+1], lr)
 
     # keep the updated shadow weights for future reuse
     shadow_weight = model.weight.detach().clone()
@@ -245,17 +248,40 @@ def online_learning(epochs: int = 1, lr: int = 64, loader=None):
     torch.save(shadow_weight, path + "/model/shadow_weight.pt")
     torch.save(model.weight,  path + "/model/int_weights.pt")
 
-def online_learning_standard(epochs: int = 1, lr: float = 64.0, sim: str = "cos", loader=None):
+def online_learning_standard(epochs: int = 1, lr: float = 32.0, sim: str = "cos", loader=None):
     """Online updates using the standard OnlineHD error-corrective rule (add_online)."""
+    global shadow_weight
+    if shadow_weight is None:
+        # Try loading persisted shadow weights from a previous online-learning run,
+        # falling back to the initial training weights (int_weights.pt).
+        shadow_path = path + "/model/shadow_weight.pt"
+        int_path = path + "/model/int_weights.pt"
+        if os.path.isfile(shadow_path):
+            print("Loading shadow weights from previous online-learning run")
+            shadow_weight = torch.load(shadow_path, map_location=device)
+        elif os.path.isfile(int_path):
+            print("Loading initial training weights (int_weights.pt)")
+            shadow_weight = torch.load(int_path, map_location=device)
+        else:
+            shadow_weight = model.weight.detach().clone()
+    # restore full-precision weights before online updates
+    # (test() binarizes model.weight in-place, so we must restore from shadow)
+    model.weight = torch.nn.Parameter(shadow_weight.clone().to(device), requires_grad=False)
 
     ld = loader if loader is not None else train_ld
     # Pre-encode entire dataset in large batches, then update one sample at a time
     all_hv, all_labels = batch_encode_dataset(ld)
     with torch.no_grad():
         for epoch in range(epochs):
-            for i in tqdm(range(all_hv.size(0)), desc=f"Online epoch {epoch+1}"):
-                model.add_online(all_hv[i:i+1], all_labels[i:i+1], lr, False)
+            perm = torch.randperm(all_hv.size(0))
+            all_hv_shuffled = all_hv[perm]
+            all_labels_shuffled = all_labels[perm]
+            for i in tqdm(range(all_hv_shuffled.size(0)), desc=f"Online epoch {epoch+1}"):
+                model.add_online(all_hv_shuffled[i:i+1], all_labels_shuffled[i:i+1], lr, False)
 
-    # persist updated model weights to disk
-    torch.save(model.weight, path + "/model/int_weights.pt")
+    # keep the updated shadow weights for future reuse
+    shadow_weight = model.weight.detach().clone()
+    # persist shadow weights and updated model weights to disk
+    torch.save(shadow_weight, path + "/model/shadow_weight.pt")
+    torch.save(model.weight,  path + "/model/int_weights.pt")
 

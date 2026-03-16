@@ -40,8 +40,8 @@ ENTITY countingSimTop IS
         run                : IN  STD_LOGIC;
         hv                 : IN  STD_LOGIC_VECTOR(d-1 DOWNTO 0);
         update_valid       : IN  STD_LOGIC;
-        updated_truth      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
-        updated_prediction : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+        updated_truth      : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
+        updated_prediction : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
         ground_truth       : IN  INTEGER;
         predicted_label    : IN  INTEGER;
         done               : OUT STD_LOGIC;

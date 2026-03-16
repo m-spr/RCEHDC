@@ -57,7 +57,7 @@ architecture behavioral of learningTop is
 	attribute ram_style of update_predicted : signal is "distributed";
 	signal update_completed : std_logic := '0';
 	signal current_idx      : integer := 0;
-	signal ID               : std_logic_vector(9 downto 0);
+	signal ID               : std_logic_vector(19 downto 0);
 	signal rst_counter      : std_logic;
 	signal id_at_last       : std_logic;
 	signal counter_en       : std_logic;
@@ -230,7 +230,7 @@ begin
 	end process;
 
 	count : popCount
-		generic map (10)
+		generic map (20)
 		port map (
 			clk  => clk,
 			rst  => rst_counter,

@@ -132,6 +132,7 @@ ARCHITECTURE behavioral OF OTFGEn IS
 
     COMPONENT classifier IS
         GENERIC (d     : INTEGER := 1000; --- dimension size+zeropading
+                 dimensionSize : INTEGER := 1000; -- actual dimension size
                  c     : INTEGER := 10;   ---- #Classes
                  n     : INTEGER := 7;    -- 2^n <= F, n is max possible number and indicate the bit-widths of memory pointer, counter and etc,,,
                  adI   : INTEGER := 5;    -- number of confComp module, or adderInput and = ceiling(D/(2^n))
@@ -142,8 +143,8 @@ ARCHITECTURE behavioral OF OTFGEn IS
         PORT (
             clk, rst, run           : IN  STD_LOGIC;
             hv                      : IN  STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
-            updated_truth           : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
-            updated_prediction      : IN  STD_LOGIC_VECTOR(999 DOWNTO 0);
+            updated_truth           : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
+            updated_prediction      : IN  STD_LOGIC_VECTOR(dimensionSize - 1 DOWNTO 0);
             ground_truth            : IN  INTEGER;
             update_valid            : IN  STD_LOGIC;
             done, TLAST_S, TVALID_S : OUT STD_LOGIC;
@@ -206,8 +207,8 @@ ARCHITECTURE behavioral OF OTFGEn IS
     CONSTANT encodeVecZero : STD_LOGIC_VECTOR(adI*(2**n)-d-1 DOWNTO 0) := (others => '0');
 
     -- Learning flow signals
-    SIGNAL binary_correct       : STD_LOGIC_VECTOR(999 DOWNTO 0);
-    SIGNAL binary_predicted     : STD_LOGIC_VECTOR(999 DOWNTO 0);
+    SIGNAL binary_correct       : STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
+    SIGNAL binary_predicted     : STD_LOGIC_VECTOR(d - 1 DOWNTO 0);
     SIGNAL predictedClassScore  : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
     SIGNAL groundTruthScore     : STD_LOGIC_VECTOR((n + logn) - 1 DOWNTO 0);
     SIGNAL learningRun          : STD_LOGIC := '0';
@@ -287,6 +288,7 @@ BEGIN
     cls : classifier
         GENERIC MAP (
             d     => adI*(2**n),
+            dimensionSize => d,
             c     => c,
             n     => n, 
             adI   => adI,
